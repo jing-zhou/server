@@ -1,7 +1,7 @@
 package com.illiad.handler;
 
 import com.illiad.config.Params;
-import com.illiad.proxy.Utils;
+import com.illiad.server.Utils;
 import com.illiad.security.Ssl;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
