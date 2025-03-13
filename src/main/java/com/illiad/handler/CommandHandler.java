@@ -36,16 +36,8 @@ public class CommandHandler extends SimpleChannelInboundHandler<SocksMessage> {
                 }
                 break;
             case SOCKS5:
-                if (socksRequest instanceof Socks5InitialRequest) {
-                    // auth support example
-                    //ctx.pipeline().addFirst(new Socks5PasswordAuthRequestDecoder());
-                    //ctx.write(new DefaultSocks5AuthMethodResponse(Socks5AuthMethod.PASSWORD));
-                    ctx.pipeline().addFirst(new Socks5CommandRequestDecoder());
-                    ctx.write(new DefaultSocks5InitialResponse(Socks5AuthMethod.NO_AUTH));
-                } else if (socksRequest instanceof Socks5PasswordAuthRequest) {
-                    ctx.pipeline().addFirst(new Socks5CommandRequestDecoder());
-                    ctx.write(new DefaultSocks5PasswordAuthResponse(Socks5PasswordAuthStatus.SUCCESS));
-                } else if (socksRequest instanceof Socks5CommandRequest) {
+                // only socks5CmdRequest are expected
+               if (socksRequest instanceof Socks5CommandRequest) {
                     Socks5CommandRequest socks5CmdRequest = (Socks5CommandRequest) socksRequest;
                     if (socks5CmdRequest.type() == Socks5CommandType.CONNECT) {
                         ctx.pipeline().addLast(connectHandler);
@@ -71,7 +63,7 @@ public class CommandHandler extends SimpleChannelInboundHandler<SocksMessage> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable throwable) {
-        throwable.printStackTrace();
+        ctx.fireExceptionCaught(throwable);
         utils.closeOnFlush(ctx.channel());
     }
 }
