@@ -36,7 +36,7 @@ public class HeaderDecoder extends ByteToMessageDecoder {
 
         // if the offset is not equal to the length of the offset, then it is not an illiad header
         if (!Arrays.equals(CRLF, offsetEnd)) {
-
+            // TODO: reroute the request to somewhere
         }
         // acquire the secret length
         byte byte1 = byteBuf.readByte();
@@ -49,13 +49,13 @@ public class HeaderDecoder extends ByteToMessageDecoder {
 
         // if the secret is not equal to the length of the secret, then it is not an illiad header
         if(!Arrays.equals(CRLF, secretEnd)) {
-
+            // TODO: reroute the request to somewhere
         }
 
         if (secret.verify(secretBytes)) {
 
         } else {
-
+            // TODO: reroute the request to somewhere
         }
         ctx.pipeline().remove(this);
 
