@@ -3,6 +3,7 @@ package com.illiad.server;
 import com.illiad.codec.HeaderDecoder;
 import com.illiad.config.Params;
 import com.illiad.handler.CommandHandler;
+import com.illiad.handler.PreHandler;
 import com.illiad.security.Ssl;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
@@ -37,7 +38,8 @@ public class Starter {
                                     new SslHandler(ssl.sslCtx.newEngine(ch.alloc())),
                                     new LoggingHandler(LogLevel.INFO),
                                     headerDecoder,
-                                    new SocksPortUnificationServerHandler(),
+                                    // only Socks connect(and Socks5 UDP) are forwarded here
+                                    new PreHandler(),
                                     commandHandler);
                         }
                     });
