@@ -1,8 +1,5 @@
 package com.illiad.handler;
 
-import com.illiad.codec.HeaderEncoder;
-import com.illiad.config.Params;
-import com.illiad.security.Ssl;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -19,16 +16,9 @@ import org.springframework.stereotype.Component;
 @ChannelHandler.Sharable
 public final class ConnectHandler extends SimpleChannelInboundHandler<SocksMessage> {
 
-    private final Ssl ssl;
-    private final Params params;
-    private final HeaderEncoder headerEncoder;
     private final Utils utils;
 
-    public ConnectHandler(Ssl ssl, Params params, HeaderEncoder headerEncoder, Utils utils) {
-
-        this.ssl = ssl;
-        this.params = params;
-        this.headerEncoder = headerEncoder;
+    public ConnectHandler(Utils utils) {
         this.utils = utils;
     }
 
