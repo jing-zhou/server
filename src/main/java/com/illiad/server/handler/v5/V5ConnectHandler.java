@@ -7,6 +7,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.socksx.v5.*;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
@@ -38,17 +39,23 @@ public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5Co
                 frontend.writeAndFlush(new DefaultSocks5CommandResponse(Socks5CommandStatus.SUCCESS, socks5Request.dstAddrType(), socks5Request.dstAddr(), socks5Request.dstPort()))
                         .addListeners((ChannelFutureListener) future1 -> {
                             if (future1.isSuccess()) {
-                                // remove all handlers except SslHandler from frontend pipeline
+                                // remove all handlers except , SslHandler from frontendPipeline
                                 for (String name : frontendPipeline.names()) {
                                     ChannelHandler handler = frontendPipeline.get(name);
-                                    if (!(handler instanceof SslHandler)) {
-                                        frontendPipeline.remove(name);
+                                    if (handler instanceof SslHandler || handler instanceof LoggingHandler) {
+                                        continue;
                                     }
+                                    frontendPipeline.remove(name);
+                                }
+
+                                // remove all handlers from backendPipeline
+                                for (String name : backendPipeline.names()){
+                                    backendPipeline.remove(name);
                                 }
                                 // setup Socks direct channel relay between frontend and backend
                                 frontendPipeline.addLast(new RelayHandler(backend, utils));
                                 backendPipeline.addLast(new RelayHandler(frontend, utils));
-                                // resume frontend auto read, it had been paused in AckHandler
+                                // resume frontend auto read
                                 frontend.config().setAutoRead(true);
                             } else {
                                 utils.closeOnFlush(frontend);

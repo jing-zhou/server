@@ -7,6 +7,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.socksx.v4.*;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
@@ -38,12 +39,18 @@ public final class V4ConnectHandler extends SimpleChannelInboundHandler<Socks4Co
                 frontend.writeAndFlush(new DefaultSocks4CommandResponse(Socks4CommandStatus.SUCCESS))
                         .addListeners((ChannelFutureListener) future1 -> {
                             if (future1.isSuccess()) {
-                                // remove all handlers except SslHandler from frontend pipeline
+                                // remove all handlers except , SslHandler from frontendPipeline
                                 for (String name : frontendPipeline.names()) {
                                     ChannelHandler handler = frontendPipeline.get(name);
-                                    if (!(handler instanceof SslHandler)) {
-                                        frontendPipeline.remove(name);
+                                    if (handler instanceof SslHandler || handler instanceof LoggingHandler) {
+                                        continue;
                                     }
+                                    frontendPipeline.remove(name);
+                                }
+
+                                // remove all handlers from backendPipeline
+                                for (String name : backendPipeline.names()){
+                                    backendPipeline.remove(name);
                                 }
                                 // setup Socks direct channel relay between frontend and backend
                                 frontendPipeline.addLast(new RelayHandler(backend, utils));
