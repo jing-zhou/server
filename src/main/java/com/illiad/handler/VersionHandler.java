@@ -2,7 +2,7 @@ package com.illiad.handler;
 
 import com.illiad.codec.v4.V4ServerDecoder;
 import com.illiad.codec.v4.V4ServerEncoder;
-import com.illiad.codec.v5.V5InitReqDecoder;
+import com.illiad.codec.v5.V5CmdReqDecoder;
 import com.illiad.codec.v5.V5ServerEncoder;
 import com.illiad.handler.v4.V4CommandHandler;
 import com.illiad.handler.v5.V5CommandHandler;
@@ -20,7 +20,7 @@ import java.util.List;
 
 /**
  * Detects the version of the current SOCKS connection and initializes the pipeline with
- * either {@link V4ServerDecoder} or {@link V5InitReqDecoder}.
+ * corresponding handlers.
  */
 
 @Component
@@ -63,7 +63,8 @@ public class VersionHandler extends ByteToMessageDecoder {
             case SOCKS5:
                 logKnownVersion(ctx, version);
                 p.addAfter(ctx.name(), null, v5ServerEncoder);
-                p.addAfter(ctx.name(), null, new V5InitReqDecoder());
+                // only socks5 command(connect or udp) request is expected
+                p.addAfter(ctx.name(), null, new V5CmdReqDecoder());
                 p.addAfter(ctx.name(), null, v5CommandHandler);
                 break;
             default:
