@@ -20,6 +20,7 @@ public class AckHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         promise.getNow().config().setAutoRead(false);
+        ctx.pipeline().remove(this);
         promise.setSuccess(ctx.channel());
     }
 
