@@ -15,14 +15,12 @@ import io.netty.handler.codec.socksx.SocksVersion;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import org.springframework.stereotype.Component;
-
 import java.util.List;
 
 /**
  * Detects the version of the current SOCKS connection and initializes the pipeline with
  * corresponding handlers.
  */
-
 @Component
 @ChannelHandler.Sharable
 public class VersionHandler extends ByteToMessageDecoder {
