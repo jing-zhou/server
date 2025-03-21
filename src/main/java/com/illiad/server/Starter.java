@@ -1,9 +1,9 @@
 package com.illiad.server;
 
-import com.illiad.codec.HeaderDecoder;
-import com.illiad.config.Params;
-import com.illiad.handler.VersionHandler;
-import com.illiad.security.Ssl;
+import com.illiad.server.codec.HeaderDecoder;
+import com.illiad.server.config.Params;
+import com.illiad.server.handler.VersionHandler;
+import com.illiad.server.security.Ssl;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
