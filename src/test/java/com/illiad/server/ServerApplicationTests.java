@@ -1,4 +1,4 @@
-package com.illiad.server.server;
+package com.illiad.server;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
