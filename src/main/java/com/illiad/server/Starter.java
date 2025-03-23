@@ -1,8 +1,13 @@
 package com.illiad.server;
 
 import com.illiad.server.codec.HeaderDecoder;
+import com.illiad.server.codec.v4.V4ServerEncoder;
+import com.illiad.server.codec.v5.V5ServerEncoder;
 import com.illiad.server.config.Params;
 import com.illiad.server.handler.VersionHandler;
+import com.illiad.server.handler.v4.V4CommandHandler;
+import com.illiad.server.handler.v5.V5CommandHandler;
+import com.illiad.server.security.Secret;
 import com.illiad.server.security.Ssl;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
@@ -18,8 +23,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class Starter {
-
-    public Starter(Params params, HeaderDecoder headerDecoder, VersionHandler versionHandler, Ssl ssl) {
+    public Starter(Params params, V4ServerEncoder v4ServerEncoder, V4CommandHandler v4CommandHandler, V5ServerEncoder v5ServerEncoder, V5CommandHandler v5CommandHandler, Ssl ssl, Secret secret) {
         // Configure the bootstrap.
         EventLoopGroup bossGroup = new NioEventLoopGroup(3);
         EventLoopGroup workerGroup = new NioEventLoopGroup(4);
@@ -35,8 +39,8 @@ public class Starter {
                             pipeline.addLast(
                                     new SslHandler(ssl.sslCtx.newEngine(ch.alloc())),
                                     new LoggingHandler(LogLevel.INFO),
-                                    headerDecoder,
-                                    versionHandler);
+                                    new HeaderDecoder(secret),
+                                    new VersionHandler(v4ServerEncoder, v4CommandHandler, v5ServerEncoder, v5CommandHandler));
                         }
                     });
             b.bind(params.getLocalPort()).sync().channel().closeFuture().sync();

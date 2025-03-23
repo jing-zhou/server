@@ -2,10 +2,8 @@ package com.illiad.server.codec;
 
 import com.illiad.server.security.Secret;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
@@ -16,8 +14,7 @@ import java.util.List;
  * the 1 byte ahead of the offset is the length of the offset, and the 2 bytes ahead of the secret is the length of the secret.
  * this decoder is used to decode the header from a {@link ByteBuf} before processing the request.
  */
-@Component
-@ChannelHandler.Sharable
+
 public class HeaderDecoder extends ByteToMessageDecoder {
     private final static byte[] CRLF = new byte[]{0x0D, 0x0A};
     private final Secret secret;
