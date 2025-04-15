@@ -50,16 +50,20 @@ public class VersionHandler extends ByteToMessageDecoder {
         switch (version) {
             case SOCKS4a:
                 logKnownVersion(ctx, version);
-                p.addAfter(ctx.name(), null, v4ServerEncoder);
-                p.addAfter(ctx.name(), null, new V4ServerDecoder());
-                p.addAfter(ctx.name(), null, v4CommandHandler);
+                p.addLast(
+                        v4ServerEncoder,
+                        new V4ServerDecoder(),
+                        v4CommandHandler
+                );
                 break;
             case SOCKS5:
                 logKnownVersion(ctx, version);
-                p.addAfter(ctx.name(), null, v5ServerEncoder);
-                // only socks5 command(connect or udp) request is expected
-                p.addAfter(ctx.name(), null, new V5CmdReqDecoder());
-                p.addAfter(ctx.name(), null, v5CommandHandler);
+                p.addLast(
+                        v5ServerEncoder,
+                        // only socks5 command(connect or udp) request is expected
+                        new V5CmdReqDecoder(),
+                        v5CommandHandler
+                );
                 break;
             default:
                 logUnknownVersion(ctx, versionVal);
