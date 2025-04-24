@@ -1,10 +1,17 @@
 package com.illiad.server.codec;
 
+import com.illiad.server.handler.http.HttpServerHandler;
 import com.illiad.server.security.Secret;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.ByteToMessageDecoder;
-
+import io.netty.handler.codec.http.*;
+import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.ssl.SslHandler;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,26 +33,52 @@ public class HeaderDecoder extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> list) {
 
-        // keep everything in case it turns out not to be an illiad header and we have to restore the contents and reroute the request to somewhere
-        byte firstByte = byteBuf.readByte();
-        byte[] offset = byteBuf.readBytes(firstByte).array();
-        byte[] offsetEnd = byteBuf.readBytes(2).array();
-
-        // if the offset is not equal to the length of the offset, then it is not an illiad header
-        if (!Arrays.equals(CRLF, offsetEnd)) {
-            // TODO: reroute the request to somewhere
+        // keep byteBuf untouched until we can make sure it is an illiad header
+        final int readerIndex = byteBuf.readerIndex();
+        if (byteBuf.writerIndex() == readerIndex) {
+            return;
         }
-        // acquire the secret length
-        byte byte1 = byteBuf.readByte();
-        byte byte2 = byteBuf.readByte();
+        // the first byte is assumed to be the length of the offset
+        final int offsetLength = byteBuf.getByte(readerIndex);
+        // Get the following 2 bytes after offset as per offsetLength, and convert into a byte array (big-endian)
+        byte[] assumedCRLF = ByteBuffer.allocate(2).putShort(byteBuf.getShort(offsetLength + 1)).array();
 
-        // the length of the secret bytes equals the first byte + the second byte * 256
-        int secretLength = byte1 + byte2 * 256;
-        byte[] secretBytes = byteBuf.readBytes(secretLength).array();
-        byte[] secretEnd = byteBuf.readBytes(2).array();
+        // if the length of offset matches, it is an illiad header
+        if (Arrays.equals(CRLF, assumedCRLF)) {
+            // skip the offset plus 1 length byte, 2 bytes for CRLF
+            byteBuf.skipBytes(offsetLength + 3);
+        } else {
+            // not a valid illiad header, route the request to a preset https webpage
+            // remove all handlers except SslHandler from frontendPipeline
+            ChannelPipeline frontendPipeline = ctx.pipeline();
+            for (String name : frontendPipeline.names()) {
+                ChannelHandler handler = frontendPipeline.get(name);
+                if (handler instanceof SslHandler || handler instanceof LoggingHandler) {
+                    continue;
+                }
+                frontendPipeline.remove(name);
+            }
+            // setup https webpage
+            frontendPipeline.addLast(
+                    new HttpServerCodec(),
+                    new HttpObjectAggregator(1048576),
+                    new HttpContentCompressor(),
+                    new HttpServerExpectContinueHandler(),
+                    new HttpServerHandler());
+            frontendPipeline.remove(this);
+            ctx.fireChannelRead(list);
+            return;
+        }
+        // acquire the secret length as unsigned short
+        int secretLength = byteBuf.readUnsignedShort();
+        byte[] secretBytes = new byte[secretLength];
+        byteBuf.readBytes(secretBytes);
+
+        byte[] secretEnd = new byte[2];
+        byteBuf.readBytes(secretEnd);
 
         // if the secret is not equal to the length of the secret, then it is not an illiad header
-        if(!Arrays.equals(CRLF, secretEnd)) {
+        if (!Arrays.equals(CRLF, secretEnd)) {
             // TODO: reroute the request to somewhere
         }
 
@@ -57,4 +90,5 @@ public class HeaderDecoder extends ByteToMessageDecoder {
         ctx.pipeline().remove(this);
 
     }
+
 }
