@@ -21,11 +21,11 @@ import java.util.List;
 
 public class V5CmdReqDecoder extends ReplayingDecoder<State> {
 
-    @Autowired
     private V5AddressDecoder v5AddressDecoder;
 
-    public V5CmdReqDecoder() {
+    public V5CmdReqDecoder(V5AddressDecoder v5AddressDecoder) {
         super(State.INIT);
+        this.v5AddressDecoder = v5AddressDecoder;
     }
 
     @Override

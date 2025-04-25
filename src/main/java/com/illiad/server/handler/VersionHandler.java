@@ -2,6 +2,7 @@ package com.illiad.server.handler;
 
 import com.illiad.server.codec.v4.V4ServerDecoder;
 import com.illiad.server.codec.v4.V4ServerEncoder;
+import com.illiad.server.codec.v5.V5AddressDecoder;
 import com.illiad.server.codec.v5.V5CmdReqDecoder;
 import com.illiad.server.codec.v5.V5ServerEncoder;
 import com.illiad.server.handler.v4.V4CommandHandler;
@@ -28,12 +29,14 @@ public class VersionHandler extends ByteToMessageDecoder {
     private final V5ServerEncoder v5ServerEncoder;
     private final V4CommandHandler v4CommandHandler;
     private final V5CommandHandler v5CommandHandler;
+    private final V5AddressDecoder v5AddressDecoder;
 
-    public VersionHandler(V4ServerEncoder v4ServerEncoder, V4CommandHandler v4CommandHandler, V5ServerEncoder v5ServerEncoder, V5CommandHandler v5CommandHandler) {
+    public VersionHandler(V4ServerEncoder v4ServerEncoder, V4CommandHandler v4CommandHandler, V5ServerEncoder v5ServerEncoder, V5CommandHandler v5CommandHandler, V5AddressDecoder v5AddressDecoder) {
         this.v4ServerEncoder = v4ServerEncoder;
         this.v4CommandHandler = v4CommandHandler;
         this.v5ServerEncoder = v5ServerEncoder;
         this.v5CommandHandler = v5CommandHandler;
+        this.v5AddressDecoder = v5AddressDecoder;
     }
 
     @Override
@@ -61,7 +64,7 @@ public class VersionHandler extends ByteToMessageDecoder {
                 p.addLast(
                         v5ServerEncoder,
                         // only socks5 command(connect or udp) request is expected
-                        new V5CmdReqDecoder(),
+                        new V5CmdReqDecoder(v5AddressDecoder),
                         v5CommandHandler
                 );
                 break;
