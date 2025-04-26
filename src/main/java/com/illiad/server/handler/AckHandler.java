@@ -19,7 +19,6 @@ public class AckHandler extends ChannelInboundHandlerAdapter {
     // trigger the promise from the frontend channel, and pass the backend channel to the promise
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        promise.getNow().config().setAutoRead(false);
         ctx.pipeline().remove(this);
         promise.setSuccess(ctx.channel());
     }

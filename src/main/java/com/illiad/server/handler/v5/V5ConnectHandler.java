@@ -55,8 +55,6 @@ public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5Co
                                 // setup Socks direct channel relay between frontend and backend
                                 frontendPipeline.addLast(new RelayHandler(backend, utils));
                                 backendPipeline.addLast(new RelayHandler(frontend, utils));
-                                // resume frontend auto read
-                                frontend.config().setAutoRead(true);
                             } else {
                                 utils.closeOnFlush(frontend);
                                 ctx.fireExceptionCaught(future1.cause());
@@ -70,10 +68,8 @@ public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5Co
         b.group(ctx.channel().eventLoop()).channel(NioSocketChannel.class)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
                 .option(ChannelOption.SO_KEEPALIVE, true)
-                .handler(new AckHandler(promise));
-
-        // connect to the remote server
-        b.connect(socks5Request.dstAddr(), socks5Request.dstPort())
+                .handler(new AckHandler(promise))
+                .connect(socks5Request.dstAddr(), socks5Request.dstPort())
                 .addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // Connection established use handler provided results
