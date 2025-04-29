@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class Starter {
-    public Starter(Params params, V4ServerEncoder v4ServerEncoder, V4CommandHandler v4CommandHandler, V5ServerEncoder v5ServerEncoder, V5CommandHandler v5CommandHandler, V5AddressDecoder v5AddressDecoder, Ssl ssl, Secret secret) {
+    public Starter(Params params, HandlerNamer namer, V4ServerEncoder v4ServerEncoder, V4CommandHandler v4CommandHandler, V5ServerEncoder v5ServerEncoder, V5CommandHandler v5CommandHandler, V5AddressDecoder v5AddressDecoder, Ssl ssl, Secret secret) {
         // Configure the bootstrap.
         EventLoopGroup bossGroup = new NioEventLoopGroup(3);
         EventLoopGroup workerGroup = new NioEventLoopGroup(4);
@@ -37,11 +37,10 @@ public class Starter {
                         @Override
                         protected void initChannel(SocketChannel ch) {
                             ChannelPipeline pipeline = ch.pipeline();
-                            pipeline.addLast(
-                                    new SslHandler(ssl.sslCtx.newEngine(ch.alloc())),
-                                    new LoggingHandler(LogLevel.INFO),
-                                    new HeaderDecoder(secret),
-                                    new VersionHandler(v4ServerEncoder, v4CommandHandler, v5ServerEncoder, v5CommandHandler, v5AddressDecoder));
+                            pipeline.addLast(new SslHandler(ssl.sslCtx.newEngine(ch.alloc())));
+                            pipeline.addLast(new LoggingHandler(LogLevel.INFO));
+                            pipeline.addLast(namer.generateName(), new HeaderDecoder(secret));
+                            pipeline.addLast(namer.generateName(), new VersionHandler(namer, v4ServerEncoder, v4CommandHandler, v5ServerEncoder, v5CommandHandler, v5AddressDecoder));
                         }
                     });
             b.bind(params.getLocalPort()).sync().channel().closeFuture().sync();

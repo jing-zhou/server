@@ -1,5 +1,6 @@
 package com.illiad.server.handler.v5;
 
+import com.illiad.server.HandlerNamer;
 import com.illiad.server.handler.RelayHandler;
 import com.illiad.server.handler.AckHandler;
 import com.illiad.server.handler.Utils;
@@ -7,8 +8,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.socksx.v5.*;
-import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.ssl.SslHandler;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import org.springframework.stereotype.Component;
@@ -17,9 +16,11 @@ import org.springframework.stereotype.Component;
 @ChannelHandler.Sharable
 public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5CommandRequest> {
 
+    private final HandlerNamer namer;
     private final Utils utils;
 
-    public V5ConnectHandler(Utils utils) {
+    public V5ConnectHandler(HandlerNamer namer, Utils utils) {
+        this.namer = namer;
         this.utils = utils;
     }
 
@@ -40,18 +41,13 @@ public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5Co
                         .addListeners((ChannelFutureListener) future1 -> {
                             if (future1.isSuccess()) {
                                 // remove all handlers except , SslHandler from frontendPipeline
+                                // bug here we have removed pipeline tail
                                 for (String name : frontendPipeline.names()) {
-                                    ChannelHandler handler = frontendPipeline.get(name);
-                                    if (handler instanceof SslHandler || handler instanceof LoggingHandler) {
-                                        continue;
+                                    if (name.startsWith(namer.getPrefix())) {
+                                        frontendPipeline.remove(name);
                                     }
-                                    frontendPipeline.remove(name);
                                 }
 
-                                // remove all handlers from backendPipeline
-                                for (String name : backendPipeline.names()){
-                                    backendPipeline.remove(name);
-                                }
                                 // setup Socks direct channel relay between frontend and backend
                                 frontendPipeline.addLast(new RelayHandler(backend, utils));
                                 backendPipeline.addLast(new RelayHandler(frontend, utils));

@@ -1,5 +1,6 @@
 package com.illiad.server.handler.v5;
 
+import com.illiad.server.HandlerNamer;
 import com.illiad.server.handler.Utils;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -10,10 +11,12 @@ import org.springframework.stereotype.Component;
 @Component
 @ChannelHandler.Sharable
 public class V5CommandHandler extends SimpleChannelInboundHandler<Socks5CommandRequest> {
+    private final HandlerNamer namer;
     private final V5ConnectHandler connectHandler;
     private final Utils utils;
 
-    public V5CommandHandler(V5ConnectHandler connectHandler, Utils utils) {
+    public V5CommandHandler(HandlerNamer namer, V5ConnectHandler connectHandler, Utils utils) {
+        this.namer = namer;
         this.connectHandler = connectHandler;
         this.utils = utils;
     }
@@ -23,7 +26,7 @@ public class V5CommandHandler extends SimpleChannelInboundHandler<Socks5CommandR
 
         // only socks5 command (connect or udp) are expected
         if (socksRequest.type() == Socks5CommandType.CONNECT) {
-            ctx.pipeline().addLast(connectHandler);
+            ctx.pipeline().addLast(namer.generateName(), connectHandler);
             ctx.pipeline().remove(this);
             ctx.fireChannelRead(socksRequest);
         } else {
