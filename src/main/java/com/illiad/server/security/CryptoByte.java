@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CryptoByte {
 
-    byte getValue(Cryptos c) {
+    byte toByte(Cryptos c) {
         switch (c) {
             case SHA_224:
                 return 0x10;
@@ -73,7 +73,7 @@ public class CryptoByte {
     }
 
 
-    public Cryptos getCryptos(byte value) {
+    public Cryptos toCrypto(byte value) {
         switch (value) {
             case 0x10:
                 return Cryptos.SHA_224;
