@@ -1,30 +1,31 @@
 package com.illiad.server.codec;
 
+import com.illiad.server.HandlerNamer;
 import com.illiad.server.handler.http.HttpServerHandler;
 import com.illiad.server.security.Secret;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.ssl.SslHandler;
 import java.util.Arrays;
 import java.util.List;
 
 /**
  * Decodes a server-side illiad Header from a {@link ByteBuf}.
- * an illiad header consists by a variable offset, followed by CRLF, and a variable secret, followed by CRLF.
- * the 1 byte ahead of the offset is the length of the offset, and the 2 bytes ahead of the secret is the length of the secret.
- * this decoder is used to decode the header from a {@link ByteBuf} before processing the request.
+ * an illiad header is a byte array of variable lenght, followed by CRLF.
+ * the first 2 bytes is the length of the header. the next byte is the crypto type. then comes the signature, and a random offset.
+ * if the crypto type indicates that the encryption return a fixed-length signature, the length field contains the whole length(signature + offset).
+ * if the crypto type indicates that the encryption return a variable-length signature, the length field contain the length of the signature only.
  */
 
 public class HeaderDecoder extends ByteToMessageDecoder {
     private final static byte[] CRLF = new byte[]{0x0D, 0x0A};
+    private final HandlerNamer namer;
     private final Secret secret;
 
-    public HeaderDecoder(Secret secret) {
+    public HeaderDecoder(HandlerNamer namer, Secret secret) {
+        this.namer = namer;
         this.secret = secret;
     }
 
@@ -36,59 +37,116 @@ public class HeaderDecoder extends ByteToMessageDecoder {
         if (byteBuf.writerIndex() == readerIndex) {
             return;
         }
-        // the first byte is assumed to be the length of the offset
-        final int offsetLength = byteBuf.getByte(readerIndex);
-        // Get the following 2 bytes after offset as per offsetLength, and convert into a byte array (big-endian)
-        byte[] assumedCRLF = short2Bytes(byteBuf.getShort(offsetLength + 1));
-
-        // if the length of offset mismatches, it is not an illiad header; route the request to a preset https webpage
-        if (!Arrays.equals(CRLF, assumedCRLF)) {
-
-            // remove all handlers except SslHandler from frontendPipeline
-            ChannelPipeline frontendPipeline = ctx.pipeline();
-            for (String name : frontendPipeline.names()) {
-                ChannelHandler handler = frontendPipeline.get(name);
-                if (handler instanceof SslHandler || handler instanceof LoggingHandler) {
-                    continue;
-                }
-                frontendPipeline.remove(name);
-            }
-            // setup https webpage
-            frontendPipeline.addLast(
-                    new HttpServerCodec(),
-                    new HttpObjectAggregator(1048576),
-                    new HttpContentCompressor(),
-                    new HttpServerExpectContinueHandler(),
-                    new HttpServerHandler());
-            frontendPipeline.remove(this);
-            ctx.fireChannelRead(list);
+        //get the length field of the header
+        final int length = byteBuf.getUnsignedShort(readerIndex);
+        // get Crypto type byte
+        final byte cryptoType = byteBuf.getByte(readerIndex + 2);
+        short signLength = this.secret.getCryptoLength(cryptoType);
+        // simple check for the length of the header
+        if (length < 41 || length < signLength || length > byteBuf.capacity()) {
+            // if the length of the header is less than 41, it is not an illiad header; 41 = 2 bytes for length + 1 byte for crypto type + 28 bytes for minimum signature + 8 bytes for minimum offset + 2 bytes for CRLF
+            // if the length of the header is less than the supposed signature length, it is not an illiad header
+            // if the length of the header is greater than the capacity of the buffer, it is not an illiad header
+            this.rerouteToHttp(ctx, list);
             return;
         }
 
-        // skip the offset plus 1 length byte, 2 bytes for CRLF
-        byteBuf.skipBytes(offsetLength + 3);
-
-        // acquire the secret length as unsigned short
-        int secretLength = byteBuf.readUnsignedShort();
-        byte[] secretBytes = new byte[secretLength];
-        byteBuf.readBytes(secretBytes);
-
-        byte[] secretEnd = new byte[2];
-        byteBuf.readBytes(secretEnd);
-
-        // if the secret is not equal to the length of the secret, then it is not an illiad header
-        if (!Arrays.equals(CRLF, secretEnd)) {
-            // TODO: reroute the request to somewhere
-        }
-
-        if (secret.verify(secretBytes)) {
-
+        int headerEnd;
+        // check if header is followed by CRLF
+        if (signLength > 0) {
+            // the crypto type indicates that the encryption return a fixed-length signature, the length field contains the whole length( 5 + signature + offset).
+            // 5 = 2 bytes for length + 1 byte for crypto type + 2 bytes for CRLF
+            // get the last 2 bytes as per length, and convert into a byte array (big-endian)
+            byte[] assumedCRLF = short2Bytes(byteBuf.getShort(length - 2));
+            if (!Arrays.equals(CRLF, assumedCRLF)) {
+                // if the header is not followed by CRLF, it is not an illiad header
+                this.rerouteToHttp(ctx, list);
+                return;
+            }
+            //the index for LF
+            headerEnd = length - 1;
         } else {
-            // TODO: reroute the request to somewhere
+            // the crypto type indicates that the encryption return a variable-length signature, the length field contain the length of the signature only(3 + signature).
+            //  3 = 2 bytes for length + 1 byte for crypto type
+            int cRLFIndex = findCRLF(byteBuf, length);
+            if (cRLFIndex == -1) {
+                // if the header is not followed by CRLF, it is not an illiad header
+                this.rerouteToHttp(ctx, list);
+                return;
+            }
+            // the index for LF
+            headerEnd = cRLFIndex + 1;
         }
+
+        // finally get the secret bytes
+        byte[] secretBytes;
+        if (signLength > 0 ){
+            // fixed length signature, get the signature as per length standard
+            secretBytes = new byte[signLength];
+            byteBuf.getBytes(3, secretBytes);
+        } else {
+            // variable length signature, get the signature as per length field
+            secretBytes = new byte[length - 3];
+            byteBuf.getBytes(3, secretBytes);
+        }
+
+        // verify the secret
+        try {
+            if (!this.secret.verify(cryptoType, secretBytes)) {
+                // if the secret is not equal to the length of the secret, then it is not an illiad header
+                this.rerouteToHttp(ctx, list);
+                return;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        // skip the header
+        byteBuf.skipBytes(headerEnd + 1);
         ctx.pipeline().remove(this);
 
     }
+
+
+    private void rerouteToHttp(ChannelHandlerContext ctx, List<Object> list)
+    {
+        // remove all handlers except SslHandler from frontendPipeline
+        ChannelPipeline frontendPipeline = ctx.pipeline();
+        for (String name : frontendPipeline.names()) {
+            if (name.startsWith(namer.getPrefix())) {
+                frontendPipeline.remove(name);
+            }
+        }
+        // setup https webpage
+        frontendPipeline.addLast(
+                new HttpServerCodec(),
+                new HttpObjectAggregator(1048576),
+                new HttpContentCompressor(),
+                new HttpServerExpectContinueHandler(),
+                new HttpServerHandler());
+        ctx.fireChannelRead(list);
+    }
+
+    /**
+     * The length of the offset in bytes.
+     */
+    private int findCRLF(ByteBuf byteBuf, int startIndex) {
+        // 256 maximum length of offset
+        final int maxIndex = Math.min(byteBuf.writerIndex(), startIndex + 256);
+        for (int i = startIndex; i < maxIndex - 1; i++) {
+            if (byteBuf.getByte(i) == 0x0D && byteBuf.getByte(i + 1) == 0x0A) {
+                return i; // Return the index of the first byte of CRLF
+            }
+        }
+        return -1; // Return -1 if CRLF is not found
+    }
+
+    /**
+     * Converts a short value to a byte array (big-endian).
+     *
+     * @param value the short value to convert
+     * @return a byte array representing the short value
+     */
 
     static byte[] short2Bytes(short value) {
         return new byte[] {
