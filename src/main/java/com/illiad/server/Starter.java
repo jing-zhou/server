@@ -39,7 +39,7 @@ public class Starter {
                             ChannelPipeline pipeline = ch.pipeline();
                             pipeline.addLast(new SslHandler(ssl.sslCtx.newEngine(ch.alloc())));
                             pipeline.addLast(new LoggingHandler(LogLevel.INFO));
-                            pipeline.addLast(namer.generateName(), new HeaderDecoder(secret));
+                            pipeline.addLast(namer.generateName(), new HeaderDecoder(namer, secret));
                             pipeline.addLast(namer.generateName(), new VersionHandler(namer, v4ServerEncoder, v4CommandHandler, v5ServerEncoder, v5CommandHandler, v5AddressDecoder));
                         }
                     });
