@@ -2,7 +2,6 @@ package com.illiad.server.security;
 
 import com.illiad.server.config.Params;
 import org.springframework.stereotype.Component;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
