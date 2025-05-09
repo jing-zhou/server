@@ -8,6 +8,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.http.*;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -20,7 +21,13 @@ import java.util.List;
  */
 
 public class HeaderDecoder extends ByteToMessageDecoder {
-    private final static byte[] CRLF = new byte[]{0x0D, 0x0A};
+    private static final byte[] CRLF = new byte[]{0x0D, 0x0A};
+    private static final List<Byte> VALID_CRYPTO_TYPES = Arrays.asList(
+            (byte) 0x10, (byte) 0x20, (byte) 0x30, (byte) 0x40, (byte) 0x50, (byte) 0x60,
+            (byte) 0x70, (byte) 0x80, (byte) 0x90, (byte) 0xA0, (byte) 0xB0, (byte) 0xC0,
+            (byte) 0xD0, (byte) 0xE0, (byte) 0xF0, (byte) 0x01, (byte) 0x11, (byte) 0x21,
+            (byte) 0x31, (byte) 0x41, (byte) 0x51, (byte) 0x61, (byte) 0x71, (byte) 0x81,
+            (byte) 0x91, (byte) 0xA1, (byte) 0xB1, (byte) 0xC1, (byte) 0xD1, (byte) 0xE1);
     private final HandlerNamer namer;
     private final Secret secret;
 
@@ -37,10 +44,17 @@ public class HeaderDecoder extends ByteToMessageDecoder {
         if (byteBuf.writerIndex() == readerIndex) {
             return;
         }
-        //get the length field of the header
-        final int length = byteBuf.getUnsignedShort(readerIndex);
+
         // get Crypto type byte
         final byte cryptoType = byteBuf.getByte(readerIndex + 2);
+        // Precheck if cryptoType is valid
+        if (!VALID_CRYPTO_TYPES.contains(cryptoType)) {
+            this.rerouteToHttp(ctx, list);
+            return;
+        }
+
+        //get the length field of the header
+        final int length = byteBuf.getUnsignedShort(readerIndex);
         short signLength = this.secret.getCryptoLength(cryptoType);
         // simple check for the length of the header
         if (length < 41 || length < signLength || length > byteBuf.capacity()) {
@@ -80,7 +94,7 @@ public class HeaderDecoder extends ByteToMessageDecoder {
 
         // finally get the secret bytes
         byte[] secretBytes;
-        if (signLength > 0 ){
+        if (signLength > 0) {
             // fixed length signature, get the signature as per length standard
             secretBytes = new byte[signLength];
             byteBuf.getBytes(3, secretBytes);
@@ -108,8 +122,7 @@ public class HeaderDecoder extends ByteToMessageDecoder {
     }
 
 
-    private void rerouteToHttp(ChannelHandlerContext ctx, List<Object> list)
-    {
+    private void rerouteToHttp(ChannelHandlerContext ctx, List<Object> list) {
         // remove all handlers except SslHandler from frontendPipeline
         ChannelPipeline frontendPipeline = ctx.pipeline();
         for (String name : frontendPipeline.names()) {
@@ -118,8 +131,7 @@ public class HeaderDecoder extends ByteToMessageDecoder {
             }
         }
         // setup https webpage
-        frontendPipeline.addLast(
-                new HttpServerCodec(),
+        frontendPipeline.addLast(new HttpServerCodec(),
                 new HttpObjectAggregator(1048576),
                 new HttpContentCompressor(),
                 new HttpServerExpectContinueHandler(),
@@ -149,8 +161,7 @@ public class HeaderDecoder extends ByteToMessageDecoder {
      */
 
     static byte[] short2Bytes(short value) {
-        return new byte[] {
-                (byte) (value >> 8), // Extract high byte
+        return new byte[]{(byte) (value >> 8), // Extract high byte
                 (byte) value         // Extract low byte
         };
     }
