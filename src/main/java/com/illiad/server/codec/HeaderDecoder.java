@@ -8,13 +8,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.http.*;
-
 import java.util.Arrays;
 import java.util.List;
 
 /**
  * Decodes a server-side illiad Header from a {@link ByteBuf}.
- * an illiad header is a byte array of variable lenght, followed by CRLF.
+ * an illiad header is a byte array of variable lenght, ended by CRLF.
  * the first 2 bytes is the length of the header. the next byte is the crypto type. then comes the signature, and a random offset.
  * if the crypto type indicates that the encryption return a fixed-length signature, the length field contains the whole length(signature + offset).
  * if the crypto type indicates that the encryption return a variable-length signature, the length field contain the length of the signature only.
@@ -66,14 +65,14 @@ public class HeaderDecoder extends ByteToMessageDecoder {
         }
 
         int headerEnd;
-        // check if header is followed by CRLF
+        // check if header is ended by CRLF
         if (signLength > 0) {
             // the crypto type indicates that the encryption return a fixed-length signature, the length field contains the whole length( 5 + signature + offset).
             // 5 = 2 bytes for length + 1 byte for crypto type + 2 bytes for CRLF
             // get the last 2 bytes as per length, and convert into a byte array (big-endian)
             byte[] assumedCRLF = short2Bytes(byteBuf.getShort(length - 2));
             if (!Arrays.equals(CRLF, assumedCRLF)) {
-                // if the header is not followed by CRLF, it is not an illiad header
+                // if the header is not ended by CRLF, it is not an illiad header
                 this.rerouteToHttp(ctx, list);
                 return;
             }
@@ -84,7 +83,7 @@ public class HeaderDecoder extends ByteToMessageDecoder {
             //  3 = 2 bytes for length + 1 byte for crypto type
             int cRLFIndex = findCRLF(byteBuf, length);
             if (cRLFIndex == -1) {
-                // if the header is not followed by CRLF, it is not an illiad header
+                // if the header is not ended by CRLF, it is not an illiad header
                 this.rerouteToHttp(ctx, list);
                 return;
             }
