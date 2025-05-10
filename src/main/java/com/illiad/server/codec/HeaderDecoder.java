@@ -15,8 +15,8 @@ import java.util.List;
  * Decodes a server-side illiad Header from a {@link ByteBuf}.
  * an illiad header is a byte array of variable lenght, ended by CRLF.
  * the first 2 bytes is the length of the header. the next byte is the crypto type. then comes the signature, and a random offset.
- * if the crypto type indicates that the encryption return a fixed-length signature, the length field contains the whole length(signature + offset).
- * if the crypto type indicates that the encryption return a variable-length signature, the length field contain the length of the signature only.
+ * if the encryption return a fixed-length signature, the length field contains the whole length(length + cryptoType + signature + offset + CRLF).
+ * if the encryption return a variable-length signature, the length field contains the length of the signature only(length + cryptoType + signature).
  */
 
 public class HeaderDecoder extends ByteToMessageDecoder {
@@ -56,8 +56,8 @@ public class HeaderDecoder extends ByteToMessageDecoder {
         final int length = byteBuf.getUnsignedShort(readerIndex);
         short signLength = this.secret.getCryptoLength(cryptoType);
         // simple check for the length of the header
-        if (length < 41 || length < signLength || length > byteBuf.capacity()) {
-            // if the length of the header is less than 41, it is not an illiad header; 41 = 2 bytes for length + 1 byte for crypto type + 28 bytes for minimum signature + 8 bytes for minimum offset + 2 bytes for CRLF
+        if (length < 34 || length < signLength || length > byteBuf.capacity()) {
+            // if the length of the header is less than 34, it is not an illiad header; 34 = 2 bytes for length + 1 byte for crypto type + 28 bytes for minimum signature + 1 bytes for minimum offset + 2 bytes for CRLF
             // if the length of the header is less than the supposed signature length, it is not an illiad header
             // if the length of the header is greater than the capacity of the buffer, it is not an illiad header
             this.rerouteToHttp(ctx, list);
