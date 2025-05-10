@@ -1,5 +1,40 @@
 import ssl
 import socket
+import hashlib
+
+def create_header_with_sha256(data, crypto_type):
+    """
+    Creates a header byte array with SHA256 and a fixed offset of 8.
+
+    :param data: Data to hash (bytes)
+    :param crypto_type: Crypto type (1 byte)
+    :return: Header byte array
+    """
+    offset = 8  # Fixed offset
+
+    # Ensure crypto_type is 1 byte
+    if not (0 <= crypto_type <= 0xFF):
+        raise ValueError("Crypto type must be 1 byte")
+
+    # Generate SHA256 hash
+    signature = hashlib.sha256(data).digest()
+
+    # Calculate the length (2 bytes for length + 1 byte for crypto_type + signature length + 1 byte for offset + 2 bytes for CRLF)
+    length = 2 + 1 + len(signature) + 1 + 2
+
+    # Ensure the length fits in 2 bytes
+    if length > 0xFFFF:
+        raise ValueError("Length exceeds 2 bytes")
+
+    # Construct the header
+    header = bytearray()
+    header.extend(length.to_bytes(2, byteorder='big'))  # Length (2 bytes)
+    header.append(crypto_type)  # Crypto type (1 byte)
+    header.extend(signature)  # SHA256 signature (32 bytes)
+    header.append(offset)  # Offset (1 byte)
+    header.extend(b'\x0D\x0A')  # CRLF (2 bytes)
+
+    return header
 
 from pathlib import Path
 
@@ -9,39 +44,10 @@ def find_file_path(filename, search_directory):
         return file.resolve()
     return None
 
-def illiad_header(offset, secret):
-    # Convert offset and secret to bytes if they are strings
-    if isinstance(offset, str):
-        offset = offset.encode('utf-8')
-    if isinstance(secret, str):
-        secret = secret.encode('utf-8')
-
-    # Calculate lengths
-    offset_length = len(offset)
-    secret_length = len(secret)
-
-    # Construct the header
-    header = bytearray()
-    header.append(offset_length)  # 1 byte for offset length
-    header.extend(offset)        # Offset
-    header.extend(b'\r\n')       # CRLF after offset
-    header.extend(secret_length.to_bytes(2, 'big'))  # 2 bytes for secret length
-    header.extend(secret)        # Secret
-    header.extend(b'\r\n')       # CRLF after secret
-
-    return header
-
-# Example usage
-offset1 = bytearray([0x08, 0x08, 0x08])  # Example offset
-secret1 = bytearray([0x09, 0x09, 0x09])  # Example secret
-header = illiad_header(offset1, secret1)
-print("example illiad header:")
-print(header)
-
-def socks5_connect_request(offset, secret, address_type, address, port):
+def socks5_connect_request(data, crypto_type, address_type, address, port):
 
     # create illiad header
-    request = illiad_header(offset, secret)
+    request = create_header_with_sha256(data, crypto_type);
 
     # SOCKS5 version and CONNECT command
     request.extend(bytearray([0x05, 0x01, 0x00]))
@@ -71,12 +77,7 @@ def socks5_connect_request(offset, secret, address_type, address, port):
 
     return request
 
-# Example usage
-socks_request = socks5_connect_request(offset1, secret1, "Domain", "example.com", 80)
-print("example SOCKS5 CONNECT request:")
-print(socks_request)
-
-def ssl_socks_connect(offset, secret, cert_path, host, port):
+def ssl_socks_connect(data, crypto_type, cert_path, host, port):
     try:
         # Create an SSL context
                 # Create an SSL context and load the self-signed certificate
@@ -87,7 +88,7 @@ def ssl_socks_connect(offset, secret, cert_path, host, port):
                     with context.wrap_socket(sock, server_hostname=host) as ssock:
                         # Print server certificate details
                         print("SSL established. Peer:", ssock.getpeercert())
-                        req = socks5_connect_request(offset, secret, "Domain", "sina.com.cn", 80)
+                        req = socks5_connect_request(data, crypto_type, "Domain", "sina.com.cn", 80)
                         print("Sending SOCKS5 request:")
                         print(req)
                         ssock.sendall(req)
@@ -101,7 +102,11 @@ def ssl_socks_connect(offset, secret, cert_path, host, port):
             print("Error testing SSL server:", e)
 
 cert_path = find_file_path("server.pem", "/home/wjz/pro/proxy/server/src/main/resources")
-print()
 print(cert_path)
+data = b"password"
+print(data)
+crypto_type = 0x20  # Example crypto type for SHA256
+print(crypto_type)
+
 # Query the SOCKS5 proxy
-ssl_socks_connect(offset1, secret1, cert_path, "127.0.0.1", 2080)  # Replace with your proxy's IP and port
+ssl_socks_connect(data, crypto_type, cert_path, "127.0.0.1", 2080)  # Replace with your proxy's IP and port
