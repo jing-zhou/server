@@ -1,7 +1,7 @@
 package com.illiad.server.codec;
 
 import com.illiad.server.HandlerNamer;
-import com.illiad.server.handler.http.HttpServerHandler;
+import com.illiad.server.handler.http.SimpleHttpHandler;
 import com.illiad.server.security.Secret;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -122,19 +122,21 @@ public class HeaderDecoder extends ByteToMessageDecoder {
 
 
     private void rerouteToHttp(ChannelHandlerContext ctx, List<Object> list) {
-        // remove all handlers except SslHandler from frontendPipeline
+
         ChannelPipeline frontendPipeline = ctx.pipeline();
+
+        // setup https webpage
+        frontendPipeline.addLast(new HttpServerCodec(),
+                new HttpObjectAggregator(1048576),
+                new SimpleHttpHandler());
+
+        // remove all handlers except SslHandler from frontendPipeline
         for (String name : frontendPipeline.names()) {
             if (name.startsWith(namer.getPrefix())) {
                 frontendPipeline.remove(name);
             }
         }
-        // setup https webpage
-        frontendPipeline.addLast(new HttpServerCodec(),
-                new HttpObjectAggregator(1048576),
-                new HttpContentCompressor(),
-                new HttpServerExpectContinueHandler(),
-                new HttpServerHandler());
+
         ctx.fireChannelRead(list);
     }
 
