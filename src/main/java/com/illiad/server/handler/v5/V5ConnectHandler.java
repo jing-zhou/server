@@ -40,6 +40,9 @@ public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5Co
                 frontend.writeAndFlush(new DefaultSocks5CommandResponse(Socks5CommandStatus.SUCCESS, socks5Request.dstAddrType(), socks5Request.dstAddr(), socks5Request.dstPort()))
                         .addListeners((ChannelFutureListener) future1 -> {
                             if (future1.isSuccess()) {
+                                // setup Socks direct channel relay between frontend and backend
+                                frontendPipeline.addLast(new RelayHandler(backend, utils));
+                                backendPipeline.addLast(new RelayHandler(frontend, utils));
                                 // remove all handlers except , SslHandler from frontendPipeline
                                 // bug here we have removed pipeline tail
                                 for (String name : frontendPipeline.names()) {
@@ -47,10 +50,6 @@ public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5Co
                                         frontendPipeline.remove(name);
                                     }
                                 }
-
-                                // setup Socks direct channel relay between frontend and backend
-                                frontendPipeline.addLast(new RelayHandler(backend, utils));
-                                backendPipeline.addLast(new RelayHandler(frontend, utils));
                             } else {
                                 utils.closeOnFlush(frontend);
                                 ctx.fireExceptionCaught(future1.cause());
