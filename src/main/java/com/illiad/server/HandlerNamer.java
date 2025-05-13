@@ -4,6 +4,8 @@ import lombok.Getter;
 import org.springframework.stereotype.Component;
 import java.util.Random;
 
+// generate a random name for those transitive handlers so that they can be easily identified and removed
+// do not use this service for those permernant handlers
 @Component
 public class HandlerNamer {
 
