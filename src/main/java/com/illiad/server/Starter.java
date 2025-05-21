@@ -19,7 +19,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.ssl.SslHandler;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -37,7 +36,7 @@ public class Starter {
                         @Override
                         protected void initChannel(SocketChannel ch) {
                             ChannelPipeline pipeline = ch.pipeline();
-                            pipeline.addLast(new SslHandler(ssl.sslCtx.newEngine(ch.alloc())));
+                            pipeline.addLast(ssl.sslCtx.newHandler(ch.alloc()));
                             pipeline.addLast(new LoggingHandler(LogLevel.INFO));
                             pipeline.addLast(namer.generateName(), new HeaderDecoder(namer, secret,  v4ServerEncoder,  v5ServerEncoder,  v4CommandHandler,  v5CommandHandler,  v5AddressDecoder));
                         }
