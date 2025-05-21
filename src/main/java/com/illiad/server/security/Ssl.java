@@ -19,9 +19,10 @@ public class Ssl {
 
     public Ssl(@Value("${server.ssl.key-store}") Resource keyStore,
                @Value("${server.ssl.key-store-password}") String keyStorePassword,
+               @Value("${server.ssl.key-store-type}") String keyStoreType,
                @Value("${server.ssl.key-alias}") String keyAlias) throws Exception {
 
-        KeyStore ks = KeyStore.getInstance("JKS");
+        KeyStore ks = KeyStore.getInstance(keyStoreType);
         try (InputStream is = keyStore.getInputStream()) {
             ks.load(is, keyStorePassword.toCharArray());
         }
