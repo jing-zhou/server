@@ -10,10 +10,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.socksx.v5.*;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
-import org.springframework.stereotype.Component;
 
-@Component
-@ChannelHandler.Sharable
 public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5CommandRequest> {
 
     private final HandlerNamer namer;

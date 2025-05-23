@@ -15,7 +15,6 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.socksx.SocksVersion;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
-
 import java.util.List;
 
 /**
@@ -28,18 +27,18 @@ public class VersionHandler extends ByteToMessageDecoder {
             InternalLoggerFactory.getInstance(VersionHandler.class);
 
     private final HandlerNamer namer;
+    private final Utils utils;
     private final V4ServerEncoder v4ServerEncoder;
     private final V5ServerEncoder v5ServerEncoder;
     private final V4CommandHandler v4CommandHandler;
-    private final V5CommandHandler v5CommandHandler;
     private final V5AddressDecoder v5AddressDecoder;
 
-    public VersionHandler(HandlerNamer namer, V4ServerEncoder v4ServerEncoder, V4CommandHandler v4CommandHandler, V5ServerEncoder v5ServerEncoder, V5CommandHandler v5CommandHandler, V5AddressDecoder v5AddressDecoder) {
+    public VersionHandler(HandlerNamer namer, Utils utils, V4ServerEncoder v4ServerEncoder, V4CommandHandler v4CommandHandler, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder) {
         this.namer = namer;
+        this.utils = utils;
         this.v4ServerEncoder = v4ServerEncoder;
         this.v4CommandHandler = v4CommandHandler;
         this.v5ServerEncoder = v5ServerEncoder;
-        this.v5CommandHandler = v5CommandHandler;
         this.v5AddressDecoder = v5AddressDecoder;
     }
 
@@ -66,7 +65,7 @@ public class VersionHandler extends ByteToMessageDecoder {
                 p.addLast(namer.generateName(), v5ServerEncoder);
                 // only socks5 command(connect or udp) request is expected
                 p.addLast(namer.generateName(), new V5CmdReqDecoder(v5AddressDecoder));
-                p.addLast(namer.generateName(), v5CommandHandler);
+                p.addLast(namer.generateName(), new V5CommandHandler(namer, utils));
                 break;
             default:
                 logUnknownVersion(ctx, versionVal);
