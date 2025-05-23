@@ -26,7 +26,6 @@ public class V5CommandHandler extends SimpleChannelInboundHandler<Socks5CommandR
         } else {
             ctx.close();
         }
-
     }
 
     @Override
@@ -40,5 +39,3 @@ public class V5CommandHandler extends SimpleChannelInboundHandler<Socks5CommandR
         utils.closeOnFlush(ctx.channel());
     }
 }
-
-

@@ -15,6 +15,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.socksx.SocksVersion;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+
 import java.util.List;
 
 /**

@@ -37,7 +37,7 @@ public class Starter {
                             ChannelPipeline pipeline = ch.pipeline();
                             pipeline.addLast(ssl.sslCtx.newHandler(ch.alloc()));
                             pipeline.addLast(new LoggingHandler(LogLevel.INFO));
-                            pipeline.addLast(namer.generateName(), new HeaderDecoder(namer, secret,  utils, v4ServerEncoder,  v5ServerEncoder,  v4CommandHandler,  v5AddressDecoder));
+                            pipeline.addLast(namer.generateName(), new HeaderDecoder(namer, secret, utils, v4ServerEncoder, v5ServerEncoder, v4CommandHandler, v5AddressDecoder));
                         }
                     });
             b.bind(params.getLocalPort()).sync().channel().closeFuture().sync();

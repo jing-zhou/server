@@ -8,13 +8,13 @@ import com.illiad.server.handler.Utils;
 import com.illiad.server.handler.VersionHandler;
 import com.illiad.server.handler.http.SimpleHttpHandler;
 import com.illiad.server.handler.v4.V4CommandHandler;
-import com.illiad.server.handler.v5.V5CommandHandler;
 import com.illiad.server.security.Secret;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.http.*;
+
 import java.util.Arrays;
 import java.util.List;
 
