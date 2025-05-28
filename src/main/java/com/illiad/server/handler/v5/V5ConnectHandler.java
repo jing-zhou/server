@@ -25,15 +25,17 @@ public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5Co
     public void channelRead0(final ChannelHandlerContext ctx, final Socks5CommandRequest socks5Request) {
 
         Bootstrap b = new Bootstrap();
-        Channel frontend = ctx.channel();
-        ChannelPipeline frontendPipeline = ctx.pipeline();
+
         // defind a promise to handle the connection to the remote server
         Promise<Channel> promise = ctx.executor().newPromise();
 
         promise.addListener((FutureListener<Channel>) future -> {
-            final Channel backend = future.getNow();
-            final ChannelPipeline backendPipeline = backend.pipeline();
+
             if (future.isSuccess()) {
+                Channel frontend = ctx.channel();
+                ChannelPipeline frontendPipeline = ctx.pipeline();
+                final Channel backend = future.get();
+                final ChannelPipeline backendPipeline = backend.pipeline();
                 frontend.writeAndFlush(new DefaultSocks5CommandResponse(Socks5CommandStatus.SUCCESS, socks5Request.dstAddrType(), socks5Request.dstAddr(), socks5Request.dstPort()))
                         .addListeners((ChannelFutureListener) future1 -> {
                             if (future1.isSuccess()) {
@@ -53,7 +55,8 @@ public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5Co
                             }
                         });
             } else {
-                frontend.close();
+                ctx.channel().close();
+                ctx.fireExceptionCaught(future.cause());
             }
         });
 
