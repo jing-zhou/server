@@ -1,12 +1,9 @@
 package com.illiad.server.handler;
 
 import com.illiad.server.HandlerNamer;
-import com.illiad.server.codec.v4.V4ServerDecoder;
-import com.illiad.server.codec.v4.V4ServerEncoder;
 import com.illiad.server.codec.v5.V5AddressDecoder;
 import com.illiad.server.codec.v5.V5CmdReqDecoder;
 import com.illiad.server.codec.v5.V5ServerEncoder;
-import com.illiad.server.handler.v4.V4CommandHandler;
 import com.illiad.server.handler.v5.V5CommandHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,21 +21,15 @@ import java.util.List;
  */
 public class VersionHandler extends ByteToMessageDecoder {
 
-    private static final InternalLogger logger =
-            InternalLoggerFactory.getInstance(VersionHandler.class);
-
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(VersionHandler.class);
     private final HandlerNamer namer;
     private final Utils utils;
-    private final V4ServerEncoder v4ServerEncoder;
     private final V5ServerEncoder v5ServerEncoder;
-    private final V4CommandHandler v4CommandHandler;
     private final V5AddressDecoder v5AddressDecoder;
 
-    public VersionHandler(HandlerNamer namer, Utils utils, V4ServerEncoder v4ServerEncoder, V4CommandHandler v4CommandHandler, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder) {
+    public VersionHandler(HandlerNamer namer, Utils utils, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder) {
         this.namer = namer;
         this.utils = utils;
-        this.v4ServerEncoder = v4ServerEncoder;
-        this.v4CommandHandler = v4CommandHandler;
         this.v5ServerEncoder = v5ServerEncoder;
         this.v5AddressDecoder = v5AddressDecoder;
     }
@@ -55,12 +46,6 @@ public class VersionHandler extends ByteToMessageDecoder {
         SocksVersion version = SocksVersion.valueOf(versionVal);
 
         switch (version) {
-            case SOCKS4a:
-                logKnownVersion(ctx, version);
-                p.addLast(namer.generateName(), v4ServerEncoder);
-                p.addLast(namer.generateName(), new V4ServerDecoder());
-                p.addLast(namer.generateName(), v4CommandHandler);
-                break;
             case SOCKS5:
                 logKnownVersion(ctx, version);
                 p.addLast(namer.generateName(), v5ServerEncoder);
@@ -68,6 +53,7 @@ public class VersionHandler extends ByteToMessageDecoder {
                 p.addLast(namer.generateName(), new V5CmdReqDecoder(v5AddressDecoder));
                 p.addLast(namer.generateName(), new V5CommandHandler(namer, utils));
                 break;
+            case SOCKS4a:
             default:
                 logUnknownVersion(ctx, versionVal);
                 in.skipBytes(in.readableBytes());

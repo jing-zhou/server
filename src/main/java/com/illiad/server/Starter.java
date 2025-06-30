@@ -1,12 +1,10 @@
 package com.illiad.server;
 
 import com.illiad.server.codec.HeaderDecoder;
-import com.illiad.server.codec.v4.V4ServerEncoder;
 import com.illiad.server.codec.v5.V5AddressDecoder;
 import com.illiad.server.codec.v5.V5ServerEncoder;
 import com.illiad.server.config.Params;
 import com.illiad.server.handler.Utils;
-import com.illiad.server.handler.v4.V4CommandHandler;
 import com.illiad.server.security.Secret;
 import com.illiad.server.security.Ssl;
 import io.netty.bootstrap.ServerBootstrap;
@@ -22,7 +20,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class Starter {
-    public Starter(Params params, HandlerNamer namer, V4ServerEncoder v4ServerEncoder, V4CommandHandler v4CommandHandler, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder, Ssl ssl, Secret secret, Utils utils) {
+    public Starter(Params params, HandlerNamer namer, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder, Ssl ssl, Secret secret, Utils utils) {
         // Configure the bootstrap.
         EventLoopGroup bossGroup = new NioEventLoopGroup(3);
         EventLoopGroup workerGroup = new NioEventLoopGroup(4);
@@ -37,7 +35,7 @@ public class Starter {
                             ChannelPipeline pipeline = ch.pipeline();
                             pipeline.addLast(ssl.sslCtx.newHandler(ch.alloc()));
                             pipeline.addLast(new LoggingHandler(LogLevel.INFO));
-                            pipeline.addLast(namer.generateName(), new HeaderDecoder(namer, secret, utils, v4ServerEncoder, v5ServerEncoder, v4CommandHandler, v5AddressDecoder));
+                            pipeline.addLast(namer.generateName(), new HeaderDecoder(namer, secret, utils, v5ServerEncoder, v5AddressDecoder));
                         }
                     });
             b.bind(params.getLocalPort()).sync().channel().closeFuture().sync();

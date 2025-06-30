@@ -1,13 +1,11 @@
 package com.illiad.server.codec;
 
 import com.illiad.server.HandlerNamer;
-import com.illiad.server.codec.v4.V4ServerEncoder;
 import com.illiad.server.codec.v5.V5AddressDecoder;
 import com.illiad.server.codec.v5.V5ServerEncoder;
 import com.illiad.server.handler.Utils;
 import com.illiad.server.handler.VersionHandler;
 import com.illiad.server.handler.http.SimpleHttpHandler;
-import com.illiad.server.handler.v4.V4CommandHandler;
 import com.illiad.server.security.Secret;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -37,18 +35,14 @@ public class HeaderDecoder extends ByteToMessageDecoder {
     private final HandlerNamer namer;
     private final Secret secret;
     private final Utils utils;
-    private final V4ServerEncoder v4ServerEncoder;
     private final V5ServerEncoder v5ServerEncoder;
-    private final V4CommandHandler v4CommandHandler;
     private final V5AddressDecoder v5AddressDecoder;
 
-    public HeaderDecoder(HandlerNamer namer, Secret secret, Utils utils, V4ServerEncoder v4ServerEncoder, V5ServerEncoder v5ServerEncoder, V4CommandHandler v4CommandHandler, V5AddressDecoder v5AddressDecoder) {
+    public HeaderDecoder(HandlerNamer namer, Secret secret, Utils utils, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder) {
         this.namer = namer;
         this.secret = secret;
         this.utils = utils;
-        this.v4ServerEncoder = v4ServerEncoder;
         this.v5ServerEncoder = v5ServerEncoder;
-        this.v4CommandHandler = v4CommandHandler;
         this.v5AddressDecoder = v5AddressDecoder;
     }
 
@@ -132,7 +126,7 @@ public class HeaderDecoder extends ByteToMessageDecoder {
         }
 
         // add socks protocol handlers to the pipeline
-        ctx.pipeline().addLast(namer.generateName(), new VersionHandler(namer, utils, v4ServerEncoder, v4CommandHandler, v5ServerEncoder, v5AddressDecoder));
+        ctx.pipeline().addLast(namer.generateName(), new VersionHandler(namer, utils, v5ServerEncoder, v5AddressDecoder));
         // skip the header
         byteBuf.skipBytes(headerEnd + 1);
         ctx.pipeline().remove(this);
