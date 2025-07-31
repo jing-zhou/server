@@ -18,8 +18,9 @@ public class V5CommandHandler extends SimpleChannelInboundHandler<Socks5CommandR
     @Override
     public void channelRead0(ChannelHandlerContext ctx, Socks5CommandRequest socksRequest) {
 
-        // only socks5 command (connect or udp) are expected
-        if (socksRequest.type() == Socks5CommandType.CONNECT) {
+        // only socks5 commandS "CONNECT", "UDP_ASSOCIATE" are expected
+        Socks5CommandType socksCommandType = socksRequest.type();
+        if (socksCommandType == Socks5CommandType.CONNECT || socksCommandType == Socks5CommandType.UDP_ASSOCIATE) {
             ctx.pipeline().addLast(namer.generateName(), new V5ConnectHandler(namer, utils));
             ctx.pipeline().remove(this);
             ctx.fireChannelRead(socksRequest);
