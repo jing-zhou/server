@@ -1,6 +1,6 @@
 package com.illiad.server;
 
-import com.illiad.server.codec.HeaderDecoder;
+import com.illiad.server.codec.v5.HeaderDecoder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
