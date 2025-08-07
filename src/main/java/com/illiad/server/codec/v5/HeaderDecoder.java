@@ -1,7 +1,7 @@
 package com.illiad.server.codec.v5;
 
 import com.illiad.server.ParamBus;
-import com.illiad.server.handler.VersionHandler;
+import com.illiad.server.handler.v5.VersionHandler;
 import com.illiad.server.handler.http.SimpleHttpHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

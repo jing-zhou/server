@@ -1,8 +1,7 @@
-package com.illiad.server.handler;
+package com.illiad.server.handler.v5;
 
 import com.illiad.server.ParamBus;
 import com.illiad.server.codec.v5.V5CmdReqDecoder;
-import com.illiad.server.handler.v5.V5CommandHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
