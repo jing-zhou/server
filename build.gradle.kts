@@ -26,6 +26,10 @@ repositories {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
+	// https://mvnrepository.com/artifact/org.pcap4j/pcap4j-core
+	implementation("org.pcap4j:pcap4j-core:2.0.0-alpha.6")
+	// https://mvnrepository.com/artifact/org.pcap4j/pcap4j-packetfactory-static
+	implementation("org.pcap4j:pcap4j-packetfactory-static:2.0.0-alpha.6")
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
