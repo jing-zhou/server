@@ -33,7 +33,7 @@ public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5Command
                     dChannel.localAddress().getPort()
             );
             // Write the response to the client
-            ctx.writeAndFlush(response);
+            dChannel.writeAndFlush(response);
         } else {
             // Create a new UDP relay channel
             EventLoopGroup group = new NioEventLoopGroup(2);
@@ -53,6 +53,7 @@ public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5Command
                     .addListener((ChannelFutureListener) future -> {
                         if (future.isSuccess()) {
                             Channel ch = future.channel();
+                            // Store the UDP channel in ParamBus
                             bus.udpChannel.dChannel = (NioDatagramChannel) ch;
                             // Build a successful UDP_ASSOCIATE response
                             Socks5CommandResponse response = new DefaultSocks5CommandResponse(
@@ -62,10 +63,12 @@ public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5Command
                                     ((InetSocketAddress) future.channel().localAddress()).getPort()
                             );
                             // Write the response to the client
-                            ctx.writeAndFlush(response);
+                            ch.writeAndFlush(response);
                         }
                     });
         }
+        ctx.pipeline().remove(this);
+
     }
 
     @Override
