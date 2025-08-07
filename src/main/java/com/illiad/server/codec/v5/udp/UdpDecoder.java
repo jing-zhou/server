@@ -4,10 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import org.pcap4j.packet.IpV4Packet;
-import org.pcap4j.packet.IpV6Packet;
-import org.pcap4j.packet.Packet;
-import org.pcap4j.packet.UnknownPacket;
+import org.pcap4j.packet.*;
 import org.pcap4j.packet.factory.PacketFactories;
 import org.pcap4j.packet.namednumber.DataLinkType;
 
@@ -32,7 +29,7 @@ public class UdpDecoder extends ByteToMessageDecoder {
             switch (version) {
                 case VERSION_IPV4:
                     IpV4Packet ipv4 = parseIpV4Packet(byteBuf);
-                    if (ipv4 != null) {
+                    if (ipv4 != null && isUdpPacket(ipv4)) {
                         out.add(ipv4);
                     } else {
                         System.out.println("Failed to parse IPv4 packet or insufficient data, stopping.");
@@ -41,7 +38,7 @@ public class UdpDecoder extends ByteToMessageDecoder {
                     break;
                 case VERSION_IPV6:
                     IpV6Packet ipv6 = parseIpV6Packet(byteBuf);
-                    if (ipv6 != null) {
+                    if (ipv6 != null && isUdpPacket(ipv6)) {
                         out.add(ipv6);
                     } else {
                         System.out.println("Failed to parse IPv6 packet or insufficient data, stopping.");
@@ -140,4 +137,7 @@ public class UdpDecoder extends ByteToMessageDecoder {
         return null;
     }
 
+    public boolean isUdpPacket(Packet packet) {
+        return packet.contains(UdpPacket.class);
+    }
 }
