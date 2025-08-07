@@ -24,8 +24,16 @@ public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5Command
     public void channelRead0(final ChannelHandlerContext ctx, final Socks5CommandRequest request) {
 
         // UDP channel had been created
-        if (bus.udpChannel.dChannel != null && !bus.udpChannel.dChannel.isActive()) {
-
+        NioDatagramChannel dChannel = bus.udpChannel.dChannel;
+        if (dChannel != null && dChannel.isActive()) {
+            Socks5CommandResponse response = new DefaultSocks5CommandResponse(
+                    Socks5CommandStatus.SUCCESS,
+                    bus.utils.addressType(dChannel.localAddress().getHostName()),
+                    bus.params.getUdpHost(),
+                    dChannel.localAddress().getPort()
+            );
+            // Write the response to the client
+            ctx.writeAndFlush(response);
         } else {
             // Create a new UDP relay channel
             EventLoopGroup group = new NioEventLoopGroup(2);
@@ -34,7 +42,7 @@ public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5Command
                     .channel(NioDatagramChannel.class)
                     .handler(new ChannelInitializer<DatagramChannel>() {
                         @Override
-                        protected void initChannel(DatagramChannel ch) throws Exception {
+                        protected void initChannel(DatagramChannel ch) {
                             SslHandler sslHandler = bus.ssl.sslCtx.newHandler(ch.alloc());
                             ch.pipeline()
                                     .addLast(sslHandler)
