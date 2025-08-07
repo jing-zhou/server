@@ -1,6 +1,7 @@
 package com.illiad.server.handler.v5.udp;
 
 import com.illiad.server.ParamBus;
+import com.illiad.server.codec.v5.udp.UdpDecoder;
 import com.illiad.server.codec.v5.udp.UdpHeaderDecoder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -46,7 +47,8 @@ public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5Command
                             SslHandler sslHandler = bus.ssl.sslCtx.newHandler(ch.alloc());
                             ch.pipeline()
                                     .addLast(sslHandler)
-                                    .addLast(new UdpHeaderDecoder(bus));
+                                    .addLast(new UdpDecoder())
+                                    .addLast(new UdpHandler());
                         }
                     })
                     .bind(bus.params.getUdpHost(), bus.params.getUdpPort())
