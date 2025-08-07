@@ -2,6 +2,7 @@ package com.illiad.server.codec.v5.udp;
 
 import com.illiad.server.ParamBus;
 import com.illiad.server.handler.http.SimpleHttpHandler;
+import com.illiad.server.handler.v5.udp.UdpHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -115,7 +116,8 @@ public class UdpHeaderDecoder extends ByteToMessageDecoder {
         }
 
         // add UdpDecoder to the pipeline
-        ctx.pipeline().addLast(new UdpDecoder());
+        ctx.pipeline().addLast(new UdpDecoder())
+                .addLast(new UdpHandler());
         // skip the header
         byteBuf.skipBytes(headerEnd + 1);
         ctx.pipeline().remove(this);
