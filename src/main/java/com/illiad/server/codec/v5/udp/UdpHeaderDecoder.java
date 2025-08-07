@@ -1,6 +1,7 @@
 package com.illiad.server.codec.v5.udp;
 
 import com.illiad.server.HandlerNamer;
+import com.illiad.server.ParamBus;
 import com.illiad.server.UdpChannel;
 import com.illiad.server.codec.v5.V5AddressDecoder;
 import com.illiad.server.codec.v5.V5ServerEncoder;
@@ -37,10 +38,10 @@ public class UdpHeaderDecoder extends ByteToMessageDecoder {
             (byte) 0x31, (byte) 0x41, (byte) 0x51, (byte) 0x61, (byte) 0x71, (byte) 0x81,
             (byte) 0x91, (byte) 0xA1, (byte) 0xB1, (byte) 0xC1, (byte) 0xD1, (byte) 0xE1);
 
-    private final Secret secret;
+    private final ParamBus bus;
 
-    public UdpHeaderDecoder(Secret secret) {
-        this.secret = secret;
+    public UdpHeaderDecoder(ParamBus bus) {
+        this.bus = bus;
     }
 
     @Override
@@ -62,7 +63,7 @@ public class UdpHeaderDecoder extends ByteToMessageDecoder {
 
         //get the length field of the header
         final int length = byteBuf.getUnsignedShort(readerIndex);
-        short signLength = this.secret.getCryptoLength(cryptoType);
+        short signLength = bus.secret.getCryptoLength(cryptoType);
         // simple check for the length of the header
         if (length < 34 || length < signLength || length > byteBuf.capacity()) {
             // if the length of the header is less than 34, it is not an illiad header; 34 = 2 bytes for length + 1 byte for crypto type + 28 bytes for minimum signature + 1 bytes for minimum offset + 2 bytes for CRLF
@@ -113,7 +114,7 @@ public class UdpHeaderDecoder extends ByteToMessageDecoder {
 
         // verify the secret
         try {
-            if (!this.secret.verify(cryptoType, secretBytes)) {
+            if (!bus.secret.verify(cryptoType, secretBytes)) {
                 // if the secret is not equal to the length of the secret, then it is not an illiad header
                 this.rerouteToHttp(ctx, list);
                 return;

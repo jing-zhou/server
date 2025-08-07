@@ -1,8 +1,7 @@
 package com.illiad.server.handler.v5;
 
-import com.illiad.server.HandlerNamer;
+import com.illiad.server.ParamBus;
 import com.illiad.server.handler.RelayHandler;
-import com.illiad.server.handler.Utils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
@@ -11,12 +10,10 @@ import io.netty.handler.codec.socksx.v5.*;
 
 public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5CommandRequest> {
 
-    private final HandlerNamer namer;
-    private final Utils utils;
+    private final ParamBus bus;
 
-    public V5ConnectHandler(HandlerNamer namer, Utils utils) {
-        this.namer = namer;
-        this.utils = utils;
+    public V5ConnectHandler(ParamBus bus) {
+        this.bus = bus;
     }
 
     @Override
@@ -42,27 +39,27 @@ public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5Co
                                 .addListeners((ChannelFutureListener) future1 -> {
                                     if (future1.isSuccess()) {
                                         // setup Socks direct channel relay between frontend and backend
-                                        frontendPipeline.addLast(new RelayHandler(backend, utils));
-                                        backendPipeline.addLast(new RelayHandler(frontend, utils));
+                                        frontendPipeline.addLast(new RelayHandler(backend, bus));
+                                        backendPipeline.addLast(new RelayHandler(frontend, bus));
                                         // remove all handlers except , SslHandler from frontendPipeline
-                                        String prefix = namer.getPrefix();
+                                        String prefix = bus.namer.getPrefix();
                                         for (String name : frontendPipeline.names()) {
                                             if (name.startsWith(prefix)) {
                                                 frontendPipeline.remove(name);
                                             }
                                         }
                                     } else {
-                                        utils.closeOnFlush(frontend);
+                                        bus.utils.closeOnFlush(frontend);
                                         ctx.fireExceptionCaught(future1.cause());
-                                        utils.closeOnFlush(backend);
+                                        bus.utils.closeOnFlush(backend);
                                     }
                                 });
                     } else {
                         // Close the connection if the connection attempt has failed.
                         ctx.channel().writeAndFlush(new DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, socks5Request.dstAddrType()));
                         ctx.fireExceptionCaught(future.cause());
-                        utils.closeOnFlush(ctx.channel());
-                        utils.closeOnFlush(future.channel());
+                        bus.utils.closeOnFlush(ctx.channel());
+                        bus.utils.closeOnFlush(future.channel());
                     }
                 });
 
@@ -70,7 +67,7 @@ public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5Co
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        utils.closeOnFlush(ctx.channel());
+        bus.utils.closeOnFlush(ctx.channel());
         ctx.fireExceptionCaught(cause);
     }
 }

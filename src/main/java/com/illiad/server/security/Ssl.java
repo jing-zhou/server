@@ -1,6 +1,5 @@
 package com.illiad.server.security;
 
-import io.netty.channel.ChannelHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +11,6 @@ import java.io.InputStream;
 import java.security.KeyStore;
 
 @Component
-@ChannelHandler.Sharable
 public class Ssl {
 
     public final SslContext sslCtx;

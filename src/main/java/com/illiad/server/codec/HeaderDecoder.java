@@ -1,12 +1,16 @@
 package com.illiad.server.codec;
 
 import com.illiad.server.HandlerNamer;
+import com.illiad.server.ParamBus;
+import com.illiad.server.UdpChannel;
 import com.illiad.server.codec.v5.V5AddressDecoder;
 import com.illiad.server.codec.v5.V5ServerEncoder;
+import com.illiad.server.config.Params;
 import com.illiad.server.handler.Utils;
 import com.illiad.server.handler.VersionHandler;
 import com.illiad.server.handler.http.SimpleHttpHandler;
 import com.illiad.server.security.Secret;
+import com.illiad.server.security.Ssl;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -32,18 +36,12 @@ public class HeaderDecoder extends ByteToMessageDecoder {
             (byte) 0xD0, (byte) 0xE0, (byte) 0xF0, (byte) 0x01, (byte) 0x11, (byte) 0x21,
             (byte) 0x31, (byte) 0x41, (byte) 0x51, (byte) 0x61, (byte) 0x71, (byte) 0x81,
             (byte) 0x91, (byte) 0xA1, (byte) 0xB1, (byte) 0xC1, (byte) 0xD1, (byte) 0xE1);
-    private final HandlerNamer namer;
-    private final Secret secret;
-    private final Utils utils;
-    private final V5ServerEncoder v5ServerEncoder;
-    private final V5AddressDecoder v5AddressDecoder;
 
-    public HeaderDecoder(HandlerNamer namer, Secret secret, Utils utils, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder) {
-        this.namer = namer;
-        this.secret = secret;
-        this.utils = utils;
-        this.v5ServerEncoder = v5ServerEncoder;
-        this.v5AddressDecoder = v5AddressDecoder;
+
+    private final ParamBus bus;
+
+    public HeaderDecoder(ParamBus bus) {
+        this.bus = bus;
     }
 
     @Override
@@ -65,7 +63,7 @@ public class HeaderDecoder extends ByteToMessageDecoder {
 
         //get the length field of the header
         final int length = byteBuf.getUnsignedShort(readerIndex);
-        short signLength = this.secret.getCryptoLength(cryptoType);
+        short signLength = bus.secret.getCryptoLength(cryptoType);
         // simple check for the length of the header
         if (length < 34 || length < signLength || length > byteBuf.capacity()) {
             // if the length of the header is less than 34, it is not an illiad header; 34 = 2 bytes for length + 1 byte for crypto type + 28 bytes for minimum signature + 1 bytes for minimum offset + 2 bytes for CRLF
@@ -116,7 +114,7 @@ public class HeaderDecoder extends ByteToMessageDecoder {
 
         // verify the secret
         try {
-            if (!this.secret.verify(cryptoType, secretBytes)) {
+            if (!bus.secret.verify(cryptoType, secretBytes)) {
                 // if the secret is not equal to the length of the secret, then it is not an illiad header
                 this.rerouteToHttp(ctx, list);
                 return;
@@ -126,7 +124,7 @@ public class HeaderDecoder extends ByteToMessageDecoder {
         }
 
         // add socks protocol handlers to the pipeline
-        ctx.pipeline().addLast(namer.generateName(), new VersionHandler(namer, utils, v5ServerEncoder, v5AddressDecoder));
+        ctx.pipeline().addLast(bus.namer.generateName(), new VersionHandler(bus));
         // skip the header
         byteBuf.skipBytes(headerEnd + 1);
         ctx.pipeline().remove(this);

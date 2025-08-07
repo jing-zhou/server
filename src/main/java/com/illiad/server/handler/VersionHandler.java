@@ -1,9 +1,7 @@
 package com.illiad.server.handler;
 
-import com.illiad.server.HandlerNamer;
-import com.illiad.server.codec.v5.V5AddressDecoder;
+import com.illiad.server.ParamBus;
 import com.illiad.server.codec.v5.V5CmdReqDecoder;
-import com.illiad.server.codec.v5.V5ServerEncoder;
 import com.illiad.server.handler.v5.V5CommandHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,7 +10,6 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.socksx.SocksVersion;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
-
 import java.util.List;
 
 /**
@@ -22,17 +19,12 @@ import java.util.List;
 public class VersionHandler extends ByteToMessageDecoder {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(VersionHandler.class);
-    private final HandlerNamer namer;
-    private final Utils utils;
-    private final V5ServerEncoder v5ServerEncoder;
-    private final V5AddressDecoder v5AddressDecoder;
+    private final ParamBus bus;
 
-    public VersionHandler(HandlerNamer namer, Utils utils, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder) {
-        this.namer = namer;
-        this.utils = utils;
-        this.v5ServerEncoder = v5ServerEncoder;
-        this.v5AddressDecoder = v5AddressDecoder;
+    public VersionHandler(ParamBus bus) {
+        this.bus = bus;
     }
+
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
@@ -48,10 +40,10 @@ public class VersionHandler extends ByteToMessageDecoder {
         switch (version) {
             case SOCKS5:
                 logKnownVersion(ctx, version);
-                p.addLast(namer.generateName(), v5ServerEncoder);
+                p.addLast(bus.namer.generateName(), bus.v5ServerEncoder);
                 // only socks5 command(connect or udp) request is expected
-                p.addLast(namer.generateName(), new V5CmdReqDecoder(v5AddressDecoder));
-                p.addLast(namer.generateName(), new V5CommandHandler(namer, utils));
+                p.addLast(bus.namer.generateName(), new V5CmdReqDecoder(bus));
+                p.addLast(bus.namer.generateName(), new V5CommandHandler(bus));
                 break;
             case SOCKS4a:
             default:

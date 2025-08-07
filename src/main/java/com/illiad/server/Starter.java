@@ -1,12 +1,6 @@
 package com.illiad.server;
 
 import com.illiad.server.codec.HeaderDecoder;
-import com.illiad.server.codec.v5.V5AddressDecoder;
-import com.illiad.server.codec.v5.V5ServerEncoder;
-import com.illiad.server.config.Params;
-import com.illiad.server.handler.Utils;
-import com.illiad.server.security.Secret;
-import com.illiad.server.security.Ssl;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -20,7 +14,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class Starter {
-    public Starter(Params params, HandlerNamer namer, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder, Ssl ssl, Secret secret, Utils utils) {
+    public Starter(ParamBus bus) {
         // Configure the bootstrap.
         EventLoopGroup bossGroup = new NioEventLoopGroup(3);
         EventLoopGroup workerGroup = new NioEventLoopGroup(4);
@@ -33,12 +27,12 @@ public class Starter {
                         @Override
                         protected void initChannel(NioSocketChannel ch) {
                             ChannelPipeline pipeline = ch.pipeline();
-                            pipeline.addLast(ssl.sslCtx.newHandler(ch.alloc()));
+                            pipeline.addLast(bus.ssl.sslCtx.newHandler(ch.alloc()));
                             pipeline.addLast(new LoggingHandler(LogLevel.INFO));
-                            pipeline.addLast(namer.generateName(), new HeaderDecoder(namer, secret, utils, v5ServerEncoder, v5AddressDecoder));
+                            pipeline.addLast(bus.namer.generateName(), new HeaderDecoder(bus));
                         }
                     });
-            b.bind(params.getLocalPort()).sync().channel().closeFuture().sync();
+            b.bind(bus.params.getLocalPort()).sync().channel().closeFuture().sync();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
