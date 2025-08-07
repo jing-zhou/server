@@ -1,7 +1,6 @@
 package com.illiad.server.handler.v5;
 
 import com.illiad.server.ParamBus;
-import com.illiad.server.handler.RelayHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;

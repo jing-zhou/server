@@ -1,4 +1,4 @@
-package com.illiad.server.handler;
+package com.illiad.server.handler.v5;
 
 import com.illiad.server.ParamBus;
 import io.netty.buffer.Unpooled;
