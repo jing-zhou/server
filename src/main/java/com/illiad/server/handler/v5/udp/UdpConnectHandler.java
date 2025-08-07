@@ -35,7 +35,10 @@ public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5Command
                     .handler(new ChannelInitializer<DatagramChannel>() {
                         @Override
                         protected void initChannel(DatagramChannel ch) throws Exception {
-
+                            SslHandler sslHandler = bus.ssl.sslCtx.newHandler(ch.alloc());
+                            ch.pipeline()
+                                    .addLast(sslHandler)
+                                    .addLast(new UdpHeaderDecoder(bus));
                         }
                     })
                     .bind(bus.params.getUdpHost(), bus.params.getUdpPort())
@@ -43,15 +46,10 @@ public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5Command
                         if (future.isSuccess()) {
                             Channel ch = future.channel();
                             bus.udpChannel.dChannel = (NioDatagramChannel) ch;
-                            SslHandler sslHandler = bus.ssl.sslCtx.newHandler(ch.alloc(), bus.params.getUdpHost(), bus.params.getUdpPort());
-                            ch.pipeline()
-                                    .addLast(sslHandler)
-                                    .addLast(new UdpHeaderDecoder(bus));
-
                             // Build a successful UDP_ASSOCIATE response
                             Socks5CommandResponse response = new DefaultSocks5CommandResponse(
                                     Socks5CommandStatus.SUCCESS,
-                                    request.dstAddrType(),
+                                    bus.utils.addressType(bus.params.getUdpHost()),
                                     bus.params.getUdpHost(),
                                     ((InetSocketAddress) future.channel().localAddress()).getPort()
                             );
@@ -59,15 +57,6 @@ public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5Command
                             ctx.writeAndFlush(response);
                         }
                     });
-            // Build a successful UDP_ASSOCIATE response
-            Socks5CommandResponse response = new DefaultSocks5CommandResponse(
-                    Socks5CommandStatus.SUCCESS,
-                    Socks5AddressType.IPv4,
-                    bus.params.getLocalHost(),
-                    bus.params.getLocalPort()
-            );
-            // Write the response to the client
-            ctx.writeAndFlush(response);
         }
     }
 
