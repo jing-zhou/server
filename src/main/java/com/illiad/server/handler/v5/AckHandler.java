@@ -1,4 +1,4 @@
-package com.illiad.server.handler;
+package com.illiad.server.handler.v5;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
