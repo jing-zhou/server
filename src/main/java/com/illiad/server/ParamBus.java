@@ -4,6 +4,7 @@ import com.illiad.server.codec.v5.V5AddressDecoder;
 import com.illiad.server.codec.v5.V5ServerEncoder;
 import com.illiad.server.config.Params;
 import com.illiad.server.handler.Utils;
+import com.illiad.server.handler.v5.udp.DemuxHandler;
 import com.illiad.server.security.Secret;
 import com.illiad.server.security.Ssl;
 import org.springframework.stereotype.Component;
@@ -23,9 +24,10 @@ public class ParamBus {
     public Ssl ssl;
     public Secret secret;
     public UdpChannel udpChannel;
+    public DemuxHandler demuxHandler;
     public Utils utils;
 
-    public ParamBus(Params params, HandlerNamer namer, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder, Ssl ssl, Secret secret, UdpChannel udpChannel, Utils utils) {
+    public ParamBus(Params params, HandlerNamer namer, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder, Ssl ssl, Secret secret, UdpChannel udpChannel, DemuxHandler demuxHandler, Utils utils) {
         this.params = params;
         this.namer = namer;
         this.v5ServerEncoder = v5ServerEncoder;
@@ -33,6 +35,7 @@ public class ParamBus {
         this.ssl = ssl;
         this.secret = secret;
         this.udpChannel = udpChannel;
+        this.demuxHandler = demuxHandler;
         this.utils = utils;
     }
 }
