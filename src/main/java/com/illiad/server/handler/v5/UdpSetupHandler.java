@@ -26,11 +26,13 @@ public class UdpSetupHandler extends SimpleChannelInboundHandler<Socks5CommandRe
         // UDP channel had been created
         NioDatagramChannel dChannel = bus.udpChannel.dChannel;
         if (dChannel != null && dChannel.isActive()) {
+            InetSocketAddress localAddr = dChannel.localAddress();
+            String host = localAddr.getHostString();
             Socks5CommandResponse response = new DefaultSocks5CommandResponse(
                     Socks5CommandStatus.SUCCESS,
-                    bus.utils.addressType(dChannel.localAddress().getHostName()),
-                    bus.params.getUdpHost(),
-                    dChannel.localAddress().getPort()
+                    bus.utils.addressType(host),
+                    host,
+                    localAddr.getPort()
             );
             // Write the response to the client
             dChannel.writeAndFlush(response);
@@ -48,7 +50,7 @@ public class UdpSetupHandler extends SimpleChannelInboundHandler<Socks5CommandRe
                             ch.pipeline()
                                     .addLast(sslHandler)
                                     .addLast(new UdpDecoder())
-                                    .addLast(new UdpHandler());
+                                    .addLast(bus.demuxHandler);
                         }
                     })
                     .bind(bus.params.getUdpHost(), bus.params.getUdpPort())
@@ -57,11 +59,13 @@ public class UdpSetupHandler extends SimpleChannelInboundHandler<Socks5CommandRe
                             Channel ch = future.channel();
                             // Store the UDP channel in ParamBus
                             bus.udpChannel.dChannel = (NioDatagramChannel) ch;
+                            InetSocketAddress localAddr = dChannel.localAddress();
+                            String host = localAddr.getHostString();
                             // Build a successful UDP_ASSOCIATE response
                             Socks5CommandResponse response = new DefaultSocks5CommandResponse(
                                     Socks5CommandStatus.SUCCESS,
-                                    bus.utils.addressType(bus.params.getUdpHost()),
-                                    bus.params.getUdpHost(),
+                                    bus.utils.addressType(host),
+                                    host,
                                     ((InetSocketAddress) future.channel().localAddress()).getPort()
                             );
                             // Write the response to the client
