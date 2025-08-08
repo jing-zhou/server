@@ -10,7 +10,6 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.socksx.v5.*;
 import io.netty.handler.ssl.SslHandler;
-
 import java.net.InetSocketAddress;
 
 public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5CommandRequest> {
@@ -35,6 +34,7 @@ public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5Command
             );
             // Write the response to the client
             dChannel.writeAndFlush(response);
+            ctx.pipeline().remove(this);
         } else {
             // Create a new UDP relay channel
             EventLoopGroup group = new NioEventLoopGroup(2);
@@ -66,10 +66,10 @@ public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5Command
                             );
                             // Write the response to the client
                             ch.writeAndFlush(response);
+                            ctx.pipeline().remove(this);
                         }
                     });
         }
-        ctx.pipeline().remove(this);
 
     }
 
