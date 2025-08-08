@@ -1,7 +1,6 @@
 package com.illiad.server.handler.v5;
 
 import com.illiad.server.ParamBus;
-import com.illiad.server.handler.v5.udp.UdpConnectHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.socksx.v5.*;
@@ -25,10 +24,9 @@ public class V5CommandHandler extends SimpleChannelInboundHandler<Socks5CommandR
             ctx.pipeline().addLast(bus.namer.generateName(), new UdpConnectHandler(bus));
             ctx.pipeline().remove(this);
             ctx.fireChannelRead(socksRequest);
-        } else if (commandType == Socks5CommandType.BIND) {
+        } else {
             // BIND is not supported in this implementation
             ctx.writeAndFlush(new DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, socksRequest.dstAddrType()));
-        } else {
             ctx.close();
         }
     }
