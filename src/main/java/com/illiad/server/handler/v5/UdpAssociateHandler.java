@@ -2,7 +2,6 @@ package com.illiad.server.handler.v5;
 
 import com.illiad.server.ParamBus;
 import com.illiad.server.codec.v5.udp.UdpDecoder;
-import com.illiad.server.handler.v5.udp.UdpHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -12,11 +11,11 @@ import io.netty.handler.codec.socksx.v5.*;
 import io.netty.handler.ssl.SslHandler;
 import java.net.InetSocketAddress;
 
-public class UdpSetupHandler extends SimpleChannelInboundHandler<Socks5CommandRequest> {
+public class UdpAssociateHandler extends SimpleChannelInboundHandler<Socks5CommandRequest> {
 
     private final ParamBus bus;
 
-    public UdpSetupHandler(ParamBus bus) {
+    public UdpAssociateHandler(ParamBus bus) {
         this.bus = bus;
     }
 
@@ -43,12 +42,12 @@ public class UdpSetupHandler extends SimpleChannelInboundHandler<Socks5CommandRe
             Bootstrap udpBootstrap = new Bootstrap();
             udpBootstrap.group(group)
                     .channel(NioDatagramChannel.class)
+                    // Enable broadcasting if needed
+                    .option(ChannelOption.SO_BROADCAST, true)
                     .handler(new ChannelInitializer<DatagramChannel>() {
                         @Override
                         protected void initChannel(DatagramChannel ch) {
-                            SslHandler sslHandler = bus.ssl.sslCtx.newHandler(ch.alloc());
                             ch.pipeline()
-                                    .addLast(sslHandler)
                                     .addLast(new UdpDecoder())
                                     .addLast(bus.demuxHandler);
                         }
