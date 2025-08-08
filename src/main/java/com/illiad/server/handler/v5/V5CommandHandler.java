@@ -21,7 +21,7 @@ public class V5CommandHandler extends SimpleChannelInboundHandler<Socks5CommandR
             ctx.pipeline().remove(this);
             ctx.fireChannelRead(socksRequest);
         } else if (commandType == Socks5CommandType.UDP_ASSOCIATE) {
-            ctx.pipeline().addLast(bus.namer.generateName(), new UdpConnectHandler(bus));
+            ctx.pipeline().addLast(bus.namer.generateName(), new UdpSetupHandler(bus));
             ctx.pipeline().remove(this);
             ctx.fireChannelRead(socksRequest);
         } else {

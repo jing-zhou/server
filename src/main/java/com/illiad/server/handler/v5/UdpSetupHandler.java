@@ -12,11 +12,11 @@ import io.netty.handler.codec.socksx.v5.*;
 import io.netty.handler.ssl.SslHandler;
 import java.net.InetSocketAddress;
 
-public class UdpConnectHandler extends SimpleChannelInboundHandler<Socks5CommandRequest> {
+public class UdpSetupHandler extends SimpleChannelInboundHandler<Socks5CommandRequest> {
 
     private final ParamBus bus;
 
-    public UdpConnectHandler(ParamBus bus) {
+    public UdpSetupHandler(ParamBus bus) {
         this.bus = bus;
     }
 
