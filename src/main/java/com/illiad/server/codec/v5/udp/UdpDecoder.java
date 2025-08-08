@@ -19,7 +19,7 @@ public class UdpDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> out) {
-        if (byteBuf == null || !byteBuf.isReadable() || byteBuf.readableBytes() < 1) {
+        if (ctx == null || byteBuf == null || !byteBuf.isReadable() || byteBuf.readableBytes() < 1) {
             return;
         }
         while (byteBuf.readableBytes() > 0) {
@@ -50,12 +50,12 @@ public class UdpDecoder extends ByteToMessageDecoder {
                     return;
             }
         }
-        if (ctx != null) {
-            ctx.fireChannelRead(out);
-        }
+
+        ctx.fireChannelRead(out);
         try {
             super.channelReadComplete(ctx);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
     private IpV4Packet parseIpV4Packet(ByteBuf byteBuf) {
