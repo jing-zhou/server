@@ -1,48 +1,127 @@
 package com.illiad.server.handler.v5.udp;
 
+import com.illiad.server.ParamBus;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty.channel.socket.nio.NioDatagramChannel;
+
 import java.net.*;
+import java.util.Iterator;
 
 public class UdpRelayHandler extends SimpleChannelInboundHandler<DatagramPacket> {
+
+    private final ParamBus bus;
+
+    public UdpRelayHandler(ParamBus bus) {
+        this.bus = bus;
+    }
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket packet) throws UnknownHostException {
+
+        // get the sender's address (InetAddress)
+        InetAddress senderAddr = packet.sender().getAddress();
+        Aso aso = bus.asos.getAsoByBind(ctx.channel());
+        if (aso == null) {
+            return;
+        }
+        // --- Security Check (RFC 1928) ---
+        // make sure the DatagramPacket had come from the address (IP)
+        // that had initiated the UDP_ASSOCIATE on a TCP channel
+        InetAddress asoRemoteAddr = ((InetSocketAddress) (aso.getAssociate().remoteAddress())).getAddress();
+        if (!senderAddr.equals(asoRemoteAddr)) {
+            return;
+        }
+
         ByteBuf buf = packet.content();
         buf.skipBytes(3); // RSV (2 bytes) + FRAG (1 byte)
         byte atyp = buf.readByte();
-        InetSocketAddress destAddr = parseAddress(buf, atyp);
+        InetSocketAddress destAddr = bus.utils.parseAddress(buf, atyp);
         ByteBuf data = buf.slice(buf.readerIndex(), buf.readableBytes());
-
-        // Forward payload to destination
         DatagramPacket forwardPacket = new DatagramPacket(data.retain(), destAddr);
-        ctx.writeAndFlush(forwardPacket);
 
-        // To relay response: receive from destAddr, wrap with SOCKS5 UDP header, send to client
-    }
-
-    private InetSocketAddress parseAddress(ByteBuf buf, byte atyp) throws UnknownHostException {
-        if (atyp == 0x01) { // IPv4
-            byte[] ip = new byte[4];
-            buf.readBytes(ip);
-            int port = buf.readUnsignedShort();
-            return new InetSocketAddress(
-                (ip[0] & 0xFF) + "." + (ip[1] & 0xFF) + "." + (ip[2] & 0xFF) + "." + (ip[3] & 0xFF),
-                port
-            );
-        } else if (atyp == 0x03) { // Domain
-            int len = buf.readByte();
-            byte[] domain = new byte[len];
-            buf.readBytes(domain);
-            int port = buf.readUnsignedShort();
-            return new InetSocketAddress(new String(domain), port);
-        } else if (atyp == 0x04) { // IPv6
-            byte[] ip = new byte[16];
-            buf.readBytes(ip);
-            int port = buf.readUnsignedShort();
-            return new InetSocketAddress(InetAddress.getByAddress(ip), port);
+        Channel forward = null;
+        // acquire forward from aso's forward list by destAddr
+        for (Channel fwd : aso.getForwards()) {
+            if (destAddr.equals(fwd.remoteAddress())) {
+                forward = fwd;
+                break;
+            }
         }
-        throw new IllegalArgumentException("Unknown ATYP: " + atyp);
+        // already has an ephemeral socket to the final UDP server
+        if (forward != null && forward.isActive()) {
+            forward.writeAndFlush(forwardPacket)
+                    .addListener((ChannelFutureListener) future1 -> {
+                        if (!future1.isSuccess()) {
+                            Channel failedForward = future1.channel();
+                            // close forward channel if write failed
+                            failedForward.close();
+                            // remove the corresponding forward
+                            Iterator<Channel> it = aso.getForwards().iterator();
+                            while (it.hasNext()) {
+                                Channel fwd = it.next();
+                                if (failedForward.id().equals(fwd.id())) {
+                                    it.remove();
+                                    break;
+                                }
+                            }
+                        }
+                    });
+        } else {
+
+            // establish an ephemeral socket to the final UDP server
+            Bootstrap forwardStrap = new Bootstrap();
+            forwardStrap.group(ctx.channel().eventLoop())
+                    .channel(NioDatagramChannel.class)
+                    // Enable broadcasting if needed
+                    .option(ChannelOption.SO_BROADCAST, true)
+                    .handler(new ChannelInitializer<DatagramChannel>() {
+                        @Override
+                        protected void initChannel(DatagramChannel ch) {
+                            ch.pipeline().addLast(new ResHandler(bus));
+                        }
+                    }).bind(destAddr).addListener((ChannelFutureListener) future -> {
+                        if (future.isSuccess()) {
+                            Channel fwd = future.channel();
+                            fwd.writeAndFlush(forwardPacket)
+                                    .addListener((ChannelFutureListener) future1 -> {
+                                        if (future1.isSuccess()) {
+                                            // associate forward ephemeral channel to the aso
+                                            aso.getForwards().add(fwd);
+                                        } else {
+                                            fwd.close();
+                                        }
+                                    });
+                        } else {
+                            future.channel().close();
+                        }
+                    });
+        }
+
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        // remove the associate-bind-source association
+        Aso aso = bus.asos.removeAsoByBind(ctx.channel());
+        if (aso != null) {
+            Channel associate = aso.getAssociate();
+            if (associate != null && associate.isActive()) {
+                associate.close();
+            }
+            // close all forwards associated
+            for (Channel fwd : aso.getForwards()) {
+                if (fwd != null && fwd.isActive()) {
+                    fwd.close();
+                }
+
+            }
+        }
+        ctx.fireExceptionCaught(cause);
+        ctx.close();
+    }
+
 }
