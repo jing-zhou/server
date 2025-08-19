@@ -4,7 +4,7 @@ import com.illiad.server.codec.v5.V5AddressDecoder;
 import com.illiad.server.codec.v5.V5ServerEncoder;
 import com.illiad.server.config.Params;
 import com.illiad.server.handler.Utils;
-import com.illiad.server.handler.v5.udp.DemuxHandler;
+import com.illiad.server.handler.v5.udp.Asos;
 import com.illiad.server.security.Secret;
 import com.illiad.server.security.Ssl;
 import org.springframework.stereotype.Component;
@@ -12,8 +12,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * this is a helper to hold all the parameters (singleton objects)
- * the itention is to simplify the constructor of other classes
- * so that we don't need to add too many parameters in their constructors
+ * the itention is to simplify class constructor
  */
 @Component
 public class ParamBus {
@@ -23,19 +22,17 @@ public class ParamBus {
     public V5AddressDecoder v5AddressDecoder;
     public Ssl ssl;
     public Secret secret;
-    public UdpChannel udpChannel;
-    public DemuxHandler demuxHandler;
+    public Asos asos;
     public Utils utils;
 
-    public ParamBus(Params params, HandlerNamer namer, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder, Ssl ssl, Secret secret, UdpChannel udpChannel, DemuxHandler demuxHandler, Utils utils) {
+    public ParamBus(Params params, HandlerNamer namer, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder, Ssl ssl, Secret secret, Asos asos, Utils utils) {
         this.params = params;
         this.namer = namer;
         this.v5ServerEncoder = v5ServerEncoder;
         this.v5AddressDecoder = v5AddressDecoder;
         this.ssl = ssl;
         this.secret = secret;
-        this.udpChannel = udpChannel;
-        this.demuxHandler = demuxHandler;
+        this.asos = asos;
         this.utils = utils;
     }
 }
