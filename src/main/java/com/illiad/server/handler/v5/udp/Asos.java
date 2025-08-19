@@ -16,8 +16,7 @@ public class Asos {
     public void addAso(Aso aso) {
 
         if (aso != null) {
-
-            // recycle previous/expired aso under the same source and release the channel
+            // recycle previous/expired aso under the same source and release rerources
             InetSocketAddress source = aso.getSource();
             if (source != null) {
                 Aso previous = removeAsoBySource(source);
@@ -30,9 +29,11 @@ public class Asos {
                     if (oldBind != null && oldBind.isActive()) {
                         oldBind.close();
                     }
-                    Channel oldfForward = previous.getForward();
-                    if (oldfForward != null && oldfForward.isActive()) {
-                        oldfForward.close();
+                    // close all forwards associates with this source
+                    for (Channel forward : aso.getForwards()) {
+                        if (forward != null && forward.isActive()) {
+                            forward.close();
+                        }
                     }
                 }
             }
@@ -57,7 +58,7 @@ public class Asos {
     public Aso getAsoBySource(InetSocketAddress source) {
 
         if (source != null) {
-            for (Aso aso: pool) {
+            for (Aso aso : pool) {
                 if (source.equals(aso.getSource())) {
                     return aso;
                 }
@@ -70,8 +71,10 @@ public class Asos {
         if (forward != null) {
             ChannelId id = forward.id();
             for (Aso aso : pool) {
-                if (id.equals(aso.getForward().id())) {
-                    return aso;
+                for (Channel fwd : aso.getForwards()) {
+                    if (id.equals(fwd.id())) {
+                        return aso;
+                    }
                 }
             }
         }

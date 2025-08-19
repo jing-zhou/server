@@ -2,7 +2,10 @@ package com.illiad.server.handler.v5.udp;
 
 import io.netty.channel.Channel;
 import lombok.Data;
+
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class Aso {
@@ -11,7 +14,8 @@ public class Aso {
     private final Channel bind;
     // represent the originasl socket address (IP + port) of UDP packet
     private InetSocketAddress source;
-    private Channel forward;
+    // UDP could be 1 source to multiple destination since it is connectionless
+    private List<Channel> forwards = new ArrayList<Channel>();
 
     public Aso(Channel associate, Channel bind) {
         this.associate = associate;
