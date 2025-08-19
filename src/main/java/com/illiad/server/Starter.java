@@ -3,6 +3,7 @@ package com.illiad.server;
 import com.illiad.server.codec.v5.HeaderDecoder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -23,13 +24,14 @@ public class Starter {
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.INFO))
+                    .childOption(ChannelOption.SO_KEEPALIVE, true)
                     .childHandler(new ChannelInitializer<NioSocketChannel>() {
                         @Override
                         protected void initChannel(NioSocketChannel ch) {
                             ChannelPipeline pipeline = ch.pipeline();
                             pipeline.addLast(bus.ssl.sslCtx.newHandler(ch.alloc()));
                             pipeline.addLast(new LoggingHandler(LogLevel.INFO));
-                            pipeline.addLast(bus.namer.generateName(), new HeaderDecoder(bus));
+                            pipeline.addLast(new HeaderDecoder(bus));
                         }
                     });
             b.bind(bus.params.getLocalPort()).sync().channel().closeFuture().sync();
