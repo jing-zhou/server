@@ -1,6 +1,7 @@
 import ssl
 import socket
 import hashlib
+import struct
 
 def create_header_with_sha256(secret, crypto_type):
     """
@@ -49,7 +50,7 @@ def socks5_associate_request(secret, crypto_type, address_type, address, port):
     # create illiad header
     request = create_header_with_sha256(secret, crypto_type);
 
-    # SOCKS5 version and CONNECT command
+    # SOCKS5 version and ASSOCIATE command
     request.extend(bytearray([0x05, 0x03, 0x00]))
 
     if address_type == "IPv4":
@@ -109,7 +110,6 @@ def ssl_socks_udp(secret, crypto_type, cert_path, host, port, address_type, targ
                         ssock.sendall(req)
 
                         # Receive and interpret the response
-
                         resp = ssock.recv(10)
                         if resp[:2] != b'\x05\x00':
                             raise Exception('SOCKS5 UDP associate failed')
