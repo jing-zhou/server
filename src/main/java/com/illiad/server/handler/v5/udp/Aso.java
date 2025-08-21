@@ -15,7 +15,7 @@ public class Aso {
     // represent the originasl socket address (IP + port) of UDP packet
     private InetSocketAddress source;
     // UDP could be 1 source to multiple destination since it is connectionless
-    private List<Channel> forwards = new ArrayList<Channel>();
+    private List<Channel> forwards = new ArrayList<>();
 
     public Aso(Channel associate, Channel bind) {
         this.associate = associate;
