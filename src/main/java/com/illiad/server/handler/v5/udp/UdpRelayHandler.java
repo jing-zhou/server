@@ -83,7 +83,7 @@ public class UdpRelayHandler extends SimpleChannelInboundHandler<DatagramPacket>
                         protected void initChannel(DatagramChannel ch) {
                             ch.pipeline().addLast(new ResHandler(bus));
                         }
-                    }).bind(destAddr).addListener((ChannelFutureListener) future -> {
+                    }).connect(destAddr).addListener((ChannelFutureListener) future -> {
                         if (future.isSuccess()) {
                             Channel fwd = future.channel();
                             fwd.writeAndFlush(forwardPacket)
