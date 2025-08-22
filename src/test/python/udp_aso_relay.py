@@ -48,7 +48,7 @@ def find_file_path(filename, search_directory):
 def socks5_associate_request(secret, crypto_type, address_type, address, port):
 
     # create illiad header
-    request = create_header_with_sha256(secret, crypto_type);
+    request = create_header_with_sha256(secret, crypto_type)
 
     # SOCKS5 version and ASSOCIATE command
     request.extend(bytearray([0x05, 0x03, 0x00]))
