@@ -129,9 +129,13 @@ def ssl_socks_udp(secret, crypto_type, cert_path, host, port, address_type, targ
     except Exception as e:
             print("Error testing SSL server:", e)
 
-TARGET_HOST = '8.8.8.8'
-TARGET_PORT = 53
-DNS_QUERY = b'\x12\x34\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x03www\x06google\x03com\x00\x00\x01\x00\x01'
+TARGET_HOST = '127.0.0.1'
+TARGET_PORT = 5005
+DNS_QUERY = "Hello, UDP Server!".encode('utf-8')
+# TARGET_HOST = '8.8.8.8'
+# TARGET_PORT = 53
+# DNS_QUERY = b'\x12\x34\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x03www\x06google\x03com\x00\x00\x01\x00\x01'
+
 cert_path = find_file_path("server.pem", "/home/wjz/pro/proxy/server/src/main/resources")
 print(cert_path)
 secret = b"password"
@@ -139,9 +143,5 @@ print(secret)
 crypto_type = 0x20  # Example crypto type for SHA256
 print(crypto_type)
 
-TARGET_HOST = '8.8.8.8'
-TARGET_PORT = 53
-DNS_QUERY = b'\x12\x34\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x03www\x06google\x03com\x00\x00\x01\x00\x01'
-
-# Query the SOCKS5 proxy
+# UDP relay
 ssl_socks_udp(secret, crypto_type, cert_path, "127.0.0.1", 2080, "IPv4", TARGET_HOST, TARGET_PORT, DNS_QUERY)  # Replace with your proxy's IP and port
