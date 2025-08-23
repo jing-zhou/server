@@ -24,7 +24,7 @@ public final class V5ConnectHandler extends SimpleChannelInboundHandler<Socks5Co
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
-                    protected void initChannel(SocketChannel ch) throws Exception {
+                    protected void initChannel(SocketChannel ch) {
                     }
                 })
                 .connect(socks5Request.dstAddr(), socks5Request.dstPort())
