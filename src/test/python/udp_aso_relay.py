@@ -122,7 +122,19 @@ def ssl_socks_udp(secret, crypto_type, cert_path, host, port, address_type, targ
                             udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                             udp_sock.settimeout(5)
                             packet = socks5_udp_packet(targetHost, targetPort, dataGram)
+                            print("relaying UDP packet:")
+                            print(packet)
                             udp_sock.sendto(packet, (relay_ip, relay_port))
+
+                            # Optional: If you expect a response from the server, you can listen for it
+                            # Set a timeout for receiving a response (in seconds)
+                            # set a much longer timer when debug, so the UDP channel won't close
+                            # udp_sock.settimeout(600)
+                            udp_sock.settimeout(5)
+                            print("Waiting for response...")
+                            data, addr = udp_sock.recvfrom(1024)  # Receive data (buffer size 1024 bytes)
+                            print(data)
+                            print(f"Received response: '{data.decode()}' from {addr}")
                         else:
                             raise Exception('Only IPv4 relay supported in this example')
 
