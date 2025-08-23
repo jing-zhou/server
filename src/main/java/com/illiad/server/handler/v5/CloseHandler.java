@@ -7,7 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 /**
- * this handler is attaced to the associate (TCP) channel, it closes the corresponding
+ * this handler is attached to the associate (TCP) channel, it closes the corresponding
  * UDP bind channel and all those forward channels when the associate channel is closed or exception
  */
 public class CloseHandler extends ChannelInboundHandlerAdapter {
@@ -17,6 +17,11 @@ public class CloseHandler extends ChannelInboundHandlerAdapter {
         this.bus = bus;
     }
 
+    /**
+     * when debugging/tracing, comment out channelActive(), and exceptionCaught()
+     * otherwise the tcp channel will be closed(thus the UDP relay channel) long before debugging finished
+     *
+     */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
 
