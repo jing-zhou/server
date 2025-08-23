@@ -3,6 +3,7 @@ package com.illiad.server.handler.v5.udp;
 import com.illiad.server.ParamBus;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
@@ -21,16 +22,22 @@ public class ResHandler extends SimpleChannelInboundHandler<DatagramPacket> {
         if (res != null) {
             Aso aso = bus.asos.getAsobyForward(ctx.channel());
             if (aso != null) {
-                // form the SOCKS5 UDP response
-                InetSocketAddress destSocketAddr = aso.getSource();
-                ByteBuf buf = Unpooled.buffer();
-                //create  SOCKS5 UDP header
-                bus.utils.createSocks5UdpHeader(buf, destSocketAddr);
-                DatagramPacket udpData = new DatagramPacket(res.content(), destSocketAddr, res.sender());
-                // write UDP payload
-                buf.writeBytes(udpData.content());
-                // write response back to the bind channel
-                aso.getBind().writeAndFlush(buf);
+                Channel bind = aso.getBind();
+                if (bind != null && bind.isActive()) {
+                    ByteBuf content = res.content();
+                    InetSocketAddress bindSocketAddr = res.sender();
+                    ByteBuf header = Unpooled.buffer();
+                    // create  SOCKS5 UDP header
+                    // SOCKS5 Header contains the bind address of UDP Server
+                    bus.utils.createSocks5UdpHeader(header, bindSocketAddr);
+                    // Combine the SOCKS5 header with the original response content
+                    ByteBuf socksPacket = Unpooled.wrappedBuffer(header, content.retain());
+                    // Create a new DatagramPacket to send back to the client
+                    // The recipient is the SOCKS5 client's UDP address.
+                    DatagramPacket response = new DatagramPacket(socksPacket, aso.getSource());
+                    bind.writeAndFlush(response);
+                }
+
             }
         }
     }
