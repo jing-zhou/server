@@ -55,7 +55,7 @@ public class Utils {
         throw new IllegalArgumentException("Unknown ATYP: " + atyp);
     }
 
-    public void createSocks5UdpHeader(ByteBuf buf, InetSocketAddress destSocketAddr) throws UnknownHostException {
+    public void createSocks5UdpHeader(ByteBuf buf, InetSocketAddress socketAddr) throws UnknownHostException {
 
         // 1. RSV (Reserved) - 2 bytes (0x0000)
         buf.writeShort(0x0000);
@@ -64,7 +64,7 @@ public class Utils {
         buf.writeByte(0x00);
 
         // 3. ATYP (Address Type) and DST.ADDR (Destination Address)
-        InetAddress address = destSocketAddr.getAddress();
+        InetAddress address = socketAddr.getAddress();
         if (address instanceof Inet4Address) {
             buf.writeByte(0x01); // IPv4 address type
             buf.writeBytes(address.getAddress()); // Write the 4-byte IPv4 address
@@ -81,7 +81,7 @@ public class Utils {
         }
 
         // 4. DST.PORT (Destination Port) - 2 bytes
-        buf.writeShort(destSocketAddr.getPort());
+        buf.writeShort(socketAddr.getPort());
 
     }
 }
