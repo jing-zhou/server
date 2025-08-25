@@ -16,14 +16,14 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ParamBus {
-    public Params params;
-    public HandlerNamer namer;
-    public V5ServerEncoder v5ServerEncoder;
-    public V5AddressDecoder v5AddressDecoder;
-    public Ssl ssl;
-    public Secret secret;
-    public Asos asos;
-    public Utils utils;
+    public final Params params;
+    public final HandlerNamer namer;
+    public final V5ServerEncoder v5ServerEncoder;
+    public final V5AddressDecoder v5AddressDecoder;
+    public final Ssl ssl;
+    public final Secret secret;
+    public final Asos asos;
+    public final Utils utils;
 
     public ParamBus(Params params, HandlerNamer namer, V5ServerEncoder v5ServerEncoder, V5AddressDecoder v5AddressDecoder, Ssl ssl, Secret secret, Asos asos, Utils utils) {
         this.params = params;
