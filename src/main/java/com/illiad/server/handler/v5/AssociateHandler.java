@@ -12,11 +12,11 @@ import io.netty.handler.codec.socksx.v5.*;
 
 import java.net.InetSocketAddress;
 
-public class UdpAssociateHandler extends SimpleChannelInboundHandler<Socks5CommandRequest> {
+public class AssociateHandler extends SimpleChannelInboundHandler<Socks5CommandRequest> {
 
     private final ParamBus bus;
 
-    public UdpAssociateHandler(ParamBus bus) {
+    public AssociateHandler(ParamBus bus) {
         this.bus = bus;
     }
 
