@@ -34,7 +34,7 @@ public class ResHandler extends SimpleChannelInboundHandler<DatagramPacket> {
                     ByteBuf socksPacket = Unpooled.wrappedBuffer(header, content.retain());
                     // Create a new DatagramPacket to send back to the client
                     // The recipient is the SOCKS5 client's UDP address.
-                    DatagramPacket response = new DatagramPacket(socksPacket, aso.getSource());
+                    DatagramPacket response = new DatagramPacket(socksPacket, aso.getSource(), (InetSocketAddress) bind.localAddress());
                     bind.writeAndFlush(response);
                 }
 
