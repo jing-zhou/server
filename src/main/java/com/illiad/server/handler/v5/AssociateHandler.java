@@ -36,7 +36,7 @@ public class AssociateHandler extends SimpleChannelInboundHandler<Socks5CommandR
                         ch.pipeline().addLast(new UdpRelayHandler(bus));
                     }
                 })
-                .bind(bus.params.getUdpHost(), 0)
+                .bind(bus.params.getUdpHost(), bus.utils.IPV4_ZERO_PORT)
                 .addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         Channel bind = future.channel();
@@ -49,7 +49,7 @@ public class AssociateHandler extends SimpleChannelInboundHandler<Socks5CommandR
                                 Socks5CommandStatus.SUCCESS,
                                 bus.utils.addressType(host),
                                 host,
-                                ((InetSocketAddress) future.channel().localAddress()).getPort()
+                                localAddr.getPort()
                         );
                         // Write the response to the client
                         ctx.channel().writeAndFlush(response);
