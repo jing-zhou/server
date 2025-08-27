@@ -32,7 +32,9 @@ public class UdpRelayHandler extends SimpleChannelInboundHandler<DatagramPacket>
             // that had initiated the UDP_ASSOCIATE on a TCP channel
             if (sender.getAddress().equals(asoRemoteAddr)) {
                 // associate source
-                aso.setSource(sender);
+                if (aso.getSource() == null) {
+                    aso.setSource(sender);
+                }
 
                 ByteBuf buf = packet.content();
                 buf.skipBytes(3); // RSV (2 bytes) + FRAG (1 byte)
@@ -41,7 +43,7 @@ public class UdpRelayHandler extends SimpleChannelInboundHandler<DatagramPacket>
                 if (destAddr != null) {
 
                     ByteBuf data = buf.slice(buf.readerIndex(), buf.readableBytes());
-                    DatagramPacket forwardPacket = new DatagramPacket(data.retain(), destAddr);
+                    DatagramPacket forwardPacket = new DatagramPacket(data.retain(), destAddr, (InetSocketAddress) ctx.channel().localAddress());
 
                     Channel forward = null;
                     // acquire forward from aso's forward list by destAddr
