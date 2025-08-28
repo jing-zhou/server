@@ -93,6 +93,40 @@ def socks5_udp_packet(ip, port, data):
     port_bytes = struct.pack('>H', port)
     return rsv + frag + atyp + addr + port_bytes + data
 
+
+def parse_socks5_udp_packet(packet):
+    # Minimum header size is 10 bytes for IPv4
+    if len(packet) < 10:
+        raise ValueError("Packet too short")
+    rsv = packet[:2]
+    frag = packet[2]
+    atyp = packet[3]
+    offset = 4
+    if atyp == 1:  # IPv4
+        dst_addr = socket.inet_ntoa(packet[offset:offset+4])
+        offset += 4
+    elif atyp == 3:  # Domain
+        domain_len = packet[offset]
+        offset += 1
+        dst_addr = packet[offset:offset+domain_len].decode()
+        offset += domain_len
+    elif atyp == 4:  # IPv6
+        dst_addr = socket.inet_ntop(socket.AF_INET6, packet[offset:offset+16])
+        offset += 16
+    else:
+        raise ValueError("Unknown ATYP")
+    dst_port = struct.unpack(">H", packet[offset:offset+2])[0]
+    offset += 2
+    data = packet[offset:]
+    return {
+        "rsv": rsv,
+        "frag": frag,
+        "atyp": atyp,
+        "dst_addr": dst_addr,
+        "dst_port": dst_port,
+        "data": data
+    }
+
 def ssl_socks_udp(secret, crypto_type, cert_path, host, port, address_type, targetHost, targetPort, dataGram):
     try:
         # Create an SSL context
@@ -133,8 +167,8 @@ def ssl_socks_udp(secret, crypto_type, cert_path, host, port, address_type, targ
                             udp_sock.settimeout(5)
                             print("Waiting for response...")
                             data, addr = udp_sock.recvfrom(1024)  # Receive data (buffer size 1024 bytes)
-                            print(data)
-                            print(f"Received response: '{data.decode()}' from {addr}")
+                            parsed = parse_socks5_udp_packet(data)
+                            print(f"Received response from {addr}:  {parsed}")
                         else:
                             raise Exception('Only IPv4 relay supported in this example')
 
