@@ -4,7 +4,7 @@ import com.illiad.server.codec.v5.V5AddressDecoder;
 import com.illiad.server.codec.v5.V5ServerEncoder;
 import com.illiad.server.config.Params;
 import com.illiad.server.handler.Utils;
-import com.illiad.server.handler.v5.udp.Asos;
+import com.illiad.server.handler.udp.Asos;
 import com.illiad.server.security.Secret;
 import com.illiad.server.security.Ssl;
 import org.springframework.stereotype.Component;

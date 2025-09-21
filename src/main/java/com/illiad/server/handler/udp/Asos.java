@@ -1,4 +1,4 @@
-package com.illiad.server.handler.v5.udp;
+package com.illiad.server.handler.udp;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelId;

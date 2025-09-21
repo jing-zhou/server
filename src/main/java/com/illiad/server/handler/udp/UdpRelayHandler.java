@@ -1,4 +1,4 @@
-package com.illiad.server.handler.v5.udp;
+package com.illiad.server.handler.udp;
 
 import com.illiad.server.ParamBus;
 import io.netty.bootstrap.Bootstrap;

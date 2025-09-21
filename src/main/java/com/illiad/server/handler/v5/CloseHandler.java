@@ -1,7 +1,7 @@
 package com.illiad.server.handler.v5;
 
 import com.illiad.server.ParamBus;
-import com.illiad.server.handler.v5.udp.Aso;
+import com.illiad.server.handler.udp.Aso;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
