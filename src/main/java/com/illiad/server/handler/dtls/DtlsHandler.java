@@ -220,6 +220,7 @@ public class DtlsHandler extends ChannelDuplexHandler {
                     // Recursively call for remaining fragments if needed
                     netout.compact();
                     if (netout.hasRemaining()) {
+                        netout.flip();
                         doSendBlocking(recipient, sender);
                     }
                 } catch (InterruptedException e) {
