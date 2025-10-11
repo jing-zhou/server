@@ -1,6 +1,7 @@
 package com.illiad.server.handler.v5;
 
 import com.illiad.server.ParamBus;
+import com.illiad.server.handler.dtls.DtlsHandler;
 import com.illiad.server.handler.udp.Aso;
 import com.illiad.server.handler.udp.UdpRelayHandler;
 import io.netty.bootstrap.Bootstrap;
@@ -9,6 +10,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.socksx.v5.*;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 
 import java.net.InetSocketAddress;
 
@@ -33,7 +36,9 @@ public class AssociateHandler extends SimpleChannelInboundHandler<Socks5CommandR
                 .handler(new ChannelInitializer<DatagramChannel>() {
                     @Override
                     protected void initChannel(DatagramChannel ch) {
-                        ch.pipeline().addLast(new UdpRelayHandler(bus));
+                        ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO))
+                                .addLast(new DtlsHandler(bus))
+                                .addLast(new UdpRelayHandler(bus));
                     }
                 })
                 .bind(bus.params.getUdpHost(), bus.utils.IPV4_ZERO_PORT)
