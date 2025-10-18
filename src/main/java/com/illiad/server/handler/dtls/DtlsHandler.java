@@ -38,6 +38,7 @@ public class DtlsHandler extends ChannelDuplexHandler {
         try {
             this.sslEngine = bus.dtls.sslCtx.createSSLEngine();
             this.sslEngine.setUseClientMode(false);
+            this.sslEngine.setNeedClientAuth(false);
             this.sslEngine.beginHandshake();
         } catch (SSLException e) {
             throw new RuntimeException("Failed to initialize DTLS handshake", e);
