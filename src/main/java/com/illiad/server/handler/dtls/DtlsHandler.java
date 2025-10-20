@@ -24,6 +24,7 @@ public class DtlsHandler extends ChannelDuplexHandler {
     private final ByteBuffer netout;
     private final ByteBuffer emptyBuffer;
     private final byte[] fragment;
+    private final byte[] wagon;
 
     private final Promise<Channel> handshakePromise = new LazyChannelPromise();
     private volatile ChannelHandlerContext context;
@@ -37,6 +38,8 @@ public class DtlsHandler extends ChannelDuplexHandler {
         this.netout = ByteBuffer.allocate(bus.utils.NET_OUT_SIZE);
         this.emptyBuffer = ByteBuffer.allocate(0);
         this.fragment = new byte[bus.utils.FRAGMENT_SIZE];
+        this.wagon = new byte[bus.utils.APP_IN_SIZE];
+
         try {
             this.sslEngine = bus.dtls.sslCtx.createSSLEngine();
             this.sslEngine.setUseClientMode(false);
@@ -95,16 +98,25 @@ public class DtlsHandler extends ChannelDuplexHandler {
             }
 
             try {
-                SSLEngineResult.Status status = sslEngine.unwrap(netin, appin).getStatus();
-                if (status == SSLEngineResult.Status.OK) {
-                    // unwarp successful, flip and forward appin;
-                    appin.flip();
-                    context.fireChannelRead(new DatagramPacket(Unpooled.wrappedBuffer(appin), recipient, sender));
-                } else if (status == SSLEngineResult.Status.CLOSED) {
-                    context.fireExceptionCaught(new Exception(status.name()));
+                SSLEngineResult result = sslEngine.unwrap(netin, appin);
+                appin.flip();
+                // ignore handshake status here, as handshake is already completed
+                if (result.getHandshakeStatus() == NOT_HANDSHAKING) {
+                    SSLEngineResult.Status status = result.getStatus();
+                    if (status == SSLEngineResult.Status.OK) {
+                        // unwarp successful;
+                        if (appin.hasRemaining()) {
+                            int length = appin.remaining();
+                            appin.get(wagon, 0, length);
+                            context.fireChannelRead(new DatagramPacket(Unpooled.wrappedBuffer(wagon, 0, length), recipient, sender));
+                        }
+                    } else if (status == SSLEngineResult.Status.CLOSED) {
+                        context.fireExceptionCaught(new Exception(status.name()));
+                    }
+                    // status == SSLEngineResult.Status.BUFFER_UNDERFLOW, not possible
+                    // status == SSLEngineResult.Status.BUFFER_OVERFLOW, not possible
                 }
-                // status == SSLEngineResult.Status.BUFFER_UNDERFLOW, not possible
-                // status == SSLEngineResult.Status.BUFFER_OVERFLOW, not possible
+                appin.clear();
             } catch (SSLException e) {
                 context.fireExceptionCaught(e);
             }
