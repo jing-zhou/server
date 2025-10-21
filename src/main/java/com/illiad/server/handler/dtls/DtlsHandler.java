@@ -30,6 +30,8 @@ public class DtlsHandler extends ChannelDuplexHandler {
     private volatile ChannelHandlerContext context;
     private final Object inboundLock = new Object();
     private final Object outboundLock = new Object();
+    private int fragLimt = 0;
+    private int wagnLimt = 0;
 
     public DtlsHandler(ParamBus bus) {
         this.bus = bus;
@@ -62,14 +64,11 @@ public class DtlsHandler extends ChannelDuplexHandler {
 
             //append network data to netin
             append(packet);
-            InetSocketAddress recipient = packet.recipient();
-            InetSocketAddress sender = packet.sender();
-
             if (sslEngine.getHandshakeStatus() == NOT_HANDSHAKING) {
-                decrypt(recipient, sender);
+                decrypt(packet.recipient(), packet.sender());
             } else {
                 // handshake session loops back at SSLEngine, switch sender, recipient
-                doHandshake(sender, recipient);
+                doHandshake(packet.sender(), packet.recipient());
             }
         }
     }
@@ -106,9 +105,9 @@ public class DtlsHandler extends ChannelDuplexHandler {
                     if (status == SSLEngineResult.Status.OK) {
                         // unwarp successful;
                         if (appin.hasRemaining()) {
-                            int length = appin.remaining();
-                            appin.get(wagon, 0, length);
-                            context.fireChannelRead(new DatagramPacket(Unpooled.wrappedBuffer(wagon, 0, length), recipient, sender));
+                            wagnLimt = appin.remaining();
+                            appin.get(wagon, 0, wagnLimt);
+                            context.fireChannelRead(new DatagramPacket(Unpooled.wrappedBuffer(wagon, 0, wagnLimt), recipient, sender));
                         }
                     } else if (status == SSLEngineResult.Status.CLOSED) {
                         context.fireExceptionCaught(new Exception(status.name()));
@@ -240,9 +239,7 @@ public class DtlsHandler extends ChannelDuplexHandler {
                     SSLEngineResult.Status status = sslEngine.wrap(packet.content().nioBuffer(), netout).getStatus();
                     packet.content().release();
                     if (status == SSLEngineResult.Status.OK) {
-                        InetSocketAddress recpient = packet.recipient();
-                        InetSocketAddress sender = packet.sender();
-                        doSend(recpient, sender);
+                        doSend(packet.recipient(), packet.sender());
                         promise.setSuccess();
                     } else {
                         promise.setFailure(new Exception(status.name() + System.lineSeparator() + sslEngine.getHandshakeStatus()));
@@ -268,14 +265,13 @@ public class DtlsHandler extends ChannelDuplexHandler {
             netout.flip();
         }
         try {
-            int length;
             // repeat until netout empty
             while (netout.hasRemaining()) {
-                length = Math.min(netout.remaining(), bus.utils.FRAGMENT_SIZE);
+                fragLimt = Math.min(netout.remaining(), bus.utils.FRAGMENT_SIZE);
                 // copy bytes to fragment
-                netout.get(fragment, 0, length);
+                netout.get(fragment, 0, fragLimt);
                 // Block until the operation completes
-                context.writeAndFlush(new DatagramPacket(Unpooled.wrappedBuffer(fragment, 0, length), recipient, sender)).sync();
+                context.writeAndFlush(new DatagramPacket(Unpooled.wrappedBuffer(fragment, 0, fragLimt), recipient, sender)).sync();
             }
             netout.clear();
         } catch (InterruptedException e) {
