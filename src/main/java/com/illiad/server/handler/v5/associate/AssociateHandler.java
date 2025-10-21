@@ -1,4 +1,4 @@
-package com.illiad.server.handler.v5;
+package com.illiad.server.handler.v5.associate;
 
 import com.illiad.server.ParamBus;
 import com.illiad.server.handler.dtls.DtlsHandler;
