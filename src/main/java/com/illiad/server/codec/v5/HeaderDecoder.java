@@ -2,7 +2,7 @@ package com.illiad.server.codec.v5;
 
 import com.illiad.server.ParamBus;
 import com.illiad.server.handler.v5.VersionHandler;
-import com.illiad.server.handler.http.SimpleHttpHandler;
+import com.illiad.server.handler.reroute.RerouteHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -131,7 +131,7 @@ public class HeaderDecoder extends ByteToMessageDecoder {
         // setup https webpage
         frontendPipeline.addLast(new HttpServerCodec(),
                 new HttpObjectAggregator(1048576),
-                new SimpleHttpHandler());
+                new RerouteHandler());
         ctx.pipeline().remove(this);
     }
 

@@ -1,4 +1,4 @@
-package com.illiad.server.handler.http;
+package com.illiad.server.handler.reroute;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -19,7 +19,7 @@ import static io.netty.handler.codec.http.HttpHeaderValues.KEEP_ALIVE;
 import static io.netty.handler.codec.http.HttpHeaderValues.TEXT_PLAIN;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
-public class SimpleHttpHandler extends SimpleChannelInboundHandler<HttpObject> {
+public class RerouteHandler extends SimpleChannelInboundHandler<HttpObject> {
     private static final byte[] CONTENT = { 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd' };
 
     @Override
