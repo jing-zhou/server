@@ -1,7 +1,6 @@
 package com.illiad.server.handler.v5;
 
 import com.illiad.server.ParamBus;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -16,11 +15,6 @@ public final class RelayHandler extends ChannelInboundHandlerAdapter {
         this.relayChannel = relayChannel;
         this.bus = bus;
 
-    }
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) {
-        ctx.writeAndFlush(Unpooled.EMPTY_BUFFER);
     }
 
     @Override
